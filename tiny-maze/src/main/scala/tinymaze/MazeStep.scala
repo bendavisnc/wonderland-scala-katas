@@ -1,28 +1,28 @@
 package tinymaze
 
-sealed trait IMazeStep(
-  position: MazePosition,
-  val maze: Maze,
-  mazeSize: MazeSize
-)
+sealed trait IMazeStep {
+  def position: MazePosition
+  def maze: Maze
+  def mazeSize: MazeSize
+}
 
 final case class MazeStep(
-  position: MazePosition,
+  override val position: MazePosition,
   override val maze: Maze,
-  mazeSize: MazeSize
-) extends IMazeStep(position, maze, mazeSize)
+  override val mazeSize: MazeSize
+) extends IMazeStep
 
 final case class MazeFirstStep(
-  position: MazePosition,
+  override val position: MazePosition,
   override val maze: Maze,
-  mazeSize: MazeSize
-) extends IMazeStep(position, maze, mazeSize)
+  override val mazeSize: MazeSize
+) extends IMazeStep
 
 final case class MazeLastStep(
-  position: MazePosition,
+  override val position: MazePosition,
   override val maze: Maze,
-  mazeSize: MazeSize
-) extends IMazeStep(position, maze, mazeSize)
+  override val mazeSize: MazeSize
+) extends IMazeStep
 
 object MazeFirstStep {
   def apply(maze: Maze): MazeFirstStep =

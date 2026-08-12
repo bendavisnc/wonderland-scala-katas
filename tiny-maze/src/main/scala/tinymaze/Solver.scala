@@ -1,6 +1,7 @@
 package tinymaze
 
 import scala.collection.immutable.Queue
+import scala.annotation.tailrec
 
 object Solver {
 
@@ -14,10 +15,11 @@ object Solver {
 
   def nextMazeSteps(mazeStep: MazeStep): MazeSteps =
     Seq[Direction](Left, Right, Up, Down).flatMap(direction => {
-      val position   = (mazeStep.position._1 + direction._1, mazeStep.position._2 + direction._2)
-      val shouldMark = Some(O) == mazeStep.maze.lift(position._2).flatMap(_.lift(position._1))
-      val atEnd      = Some(E) == mazeStep.maze.lift(position._2).flatMap(_.lift(position._1))
-      if position._1 < mazeStep.mazeSize._1 && position._2 < mazeStep.mazeSize._2 && (shouldMark || atEnd)
+      val position     = (mazeStep.position._1 + direction._1, mazeStep.position._2 + direction._2)
+      val shouldMark   = mazeStep.maze.lift(position._2).flatMap(_.lift(position._1)).contains(O)
+      val atEnd        = mazeStep.maze.lift(position._2).flatMap(_.lift(position._1)).contains(E)
+      val withinBounds = position._1 < mazeStep.mazeSize._1 && position._2 < mazeStep.mazeSize._2
+      if withinBounds && (shouldMark || atEnd)
       then
         if atEnd then
           Seq(
@@ -31,10 +33,11 @@ object Solver {
     })
 
   def search(maze: Maze): MazeSteps =
+    @tailrec
     def loop(queue: Queue[MazeSteps]): MazeSteps =
       val mazeSteps = queue.head
       mazeSteps.last match {
-        case MazeLastStep(_, _, _)     => mazeSteps
+        case _: MazeLastStep           => mazeSteps
         case latestMazeStep: IMazeStep =>
           loop(
             queue.tail.appendedAll(
@@ -42,7 +45,7 @@ object Solver {
                 case s: MazeStep      => nextMazeSteps(s)
                 case s: MazeFirstStep => nextMazeSteps(s)
                 case s: MazeLastStep  => ???
-              ).map(nextMazeStep => mazeSteps.appended(nextMazeStep))
+              ).map(mazeSteps.appended(_))
             )
           )
       }

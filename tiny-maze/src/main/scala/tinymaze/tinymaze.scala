@@ -23,9 +23,6 @@ val Right: Direction = (1, 0)
 val Up: Direction    = (0, -1)
 val Down: Direction  = (0, 1)
 
-def mazeAssoc(maze: Maze, position: MazePosition, element: MazeElement): Maze =
-  maze.patch(
-    position._2,
-    Seq(maze(position._2).patch(position._1, Seq(element), 1)),
-    1
-  )
+extension (maze: Maze)
+  def assoc(position: MazePosition, element: MazeElement): Maze =
+    maze.patch(position._2, Seq(maze(position._2).patch(position._1, Seq(element), 1)), 1)

@@ -7,7 +7,7 @@ object Solver {
 
   def nextMazeSteps(mazeStep: MazeFirstStep): MazeSteps =
     Seq(
-      MazeStep(maze = mazeAssoc(mazeStep.maze, (0, 0), X),
+      MazeStep(maze = mazeStep.maze.assoc((0, 0), X),
                position = mazeStep.position,
                mazeSize = mazeStep.mazeSize
       )
@@ -23,12 +23,12 @@ object Solver {
       then
         if atEnd then
           Seq(
-            MazeLastStep(maze = mazeAssoc(mazeStep.maze, position, X),
+            MazeLastStep(maze = mazeStep.maze.assoc(position, X),
                          position = position,
                          mazeSize = mazeStep.mazeSize
             )
           )
-        else Seq(mazeStep.copy(maze = mazeAssoc(mazeStep.maze, position, X), position = position))
+        else Seq(mazeStep.copy(maze = mazeStep.maze.assoc(position, X), position = position))
       else Seq.empty
     })
 

@@ -28,3 +28,8 @@ object MazeFirstStep {
   def apply(maze: Maze): MazeFirstStep =
     MazeFirstStep(position = (0, 0), maze = maze, mazeSize = (maze.head.size, maze.size))
 }
+
+object MazeLastStep {
+  def apply(mazeStep: IMazeStep): MazeLastStep =
+    MazeLastStep(position = mazeStep.position, maze = mazeStep.maze, mazeSize = mazeStep.mazeSize)
+}

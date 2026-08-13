@@ -1,5 +1,6 @@
 package tinymaze
 
+import cats.syntax.all.*
 import scala.collection.immutable.Queue
 import scala.annotation.tailrec
 
@@ -7,30 +8,30 @@ object Solver {
 
   def nextMazeSteps(mazeStep: MazeFirstStep): MazeSteps =
     Seq(
-      MazeStep(maze = mazeStep.maze.assoc((0, 0), X),
+      MazeStep(maze = mazeStep.maze.set((0, 0), X),
                position = mazeStep.position,
                mazeSize = mazeStep.mazeSize
       )
     )
 
   def nextMazeSteps(mazeStep: MazeStep): MazeSteps =
-    Seq[Direction](Left, Right, Up, Down).flatMap(direction => {
-      val position     = (mazeStep.position._1 + direction._1, mazeStep.position._2 + direction._2)
-      val shouldMark   = mazeStep.maze.lift(position._2).flatMap(_.lift(position._1)).contains(O)
-      val atEnd        = mazeStep.maze.lift(position._2).flatMap(_.lift(position._1)).contains(E)
-      val withinBounds = position._1 < mazeStep.mazeSize._1 && position._2 < mazeStep.mazeSize._2
-      if withinBounds && (shouldMark || atEnd)
-      then
-        if atEnd then
-          Seq(
-            MazeLastStep(maze = mazeStep.maze.assoc(position, X),
-                         position = position,
-                         mazeSize = mazeStep.mazeSize
-            )
-          )
-        else Seq(mazeStep.copy(maze = mazeStep.maze.assoc(position, X), position = position))
-      else Seq.empty
-    })
+    Seq[Direction](Left, Right, Up, Down).flatMap { direction =>
+      for
+        nextPosition <- Some(direction |+| mazeStep.position)
+        if nextPosition.within(mazeStep.mazeSize)
+        mazeElement <- mazeStep.maze.get(nextPosition)
+
+        step = mazeStep.copy(
+          position = nextPosition,
+          maze = mazeStep.maze.set(nextPosition, X)
+        )
+
+        result <- mazeElement match
+          case O => Some(step)
+          case E => Some(MazeLastStep(step))
+          case _ => None
+      yield result
+    }
 
   def search(maze: Maze): MazeSteps =
     @tailrec

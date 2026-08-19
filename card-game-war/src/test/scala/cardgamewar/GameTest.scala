@@ -1,10 +1,10 @@
 package cardgamewar
 
 import cardgamewar.Game.*
-import cardgamewar.Game.Player.*
-import cardgamewar.Game.FaceCard.*
-import cardgamewar.Game.AceCard.*
-import cardgamewar.Game.Suit.*
+import cardgamewar.Player.*
+import cardgamewar.FaceCard.*
+import cardgamewar.AceCard.*
+import cardgamewar.Suit.*
 
 class GameTest extends munit.FunSuite {
 

@@ -1,46 +1,13 @@
 package cardgamewar
 
+import cardgamewar.FaceCard.*
+import cardgamewar.AceCard.*
+import cardgamewar.Suit.*
+import cardgamewar.Player.*
 import cats.syntax.all.*
-import scala.collection.immutable.Queue
 import scala.annotation.tailrec
-import Game.FaceCard.*
-import Game.AceCard.*
-import Game.Suit.*
-import Game.Player.*
 
 object Game {
-
-  enum Player:
-    case PlayerOne, PlayerTwo
-
-  enum Suit:
-    case Spade, Club, Diamond, Heart
-
-  enum FaceCard:
-    case Jack, Queen, King
-
-  enum AceCard:
-    case Ace
-
-  type Rank = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | FaceCard | AceCard
-
-  case class Card(rank: Rank, suit: Suit)
-
-  case class EndGame(winner: Player, playerOneCards: Seq[Card], playerTwoCards: Seq[Card])
-
-  case class EndRound(winner: Player, playerOneCards: Seq[Card], playerTwoCards: Seq[Card])
-
-  extension (rank: Rank)
-    def rankValue: Int = rank match {
-      case i: Int => i
-      case Jack   => 11
-      case Queen  => 12
-      case King   => 13
-      case Ace    => 14
-    }
-
-  val cards: Seq[Card] = (Seq(2, 3, 4, 5, 6, 7, 8, 9, 10, Jack, Queen, King, Ace): Seq[Rank])
-    .flatMap((rank: Rank) => Seq(Spade, Club, Diamond, Heart).map((suit: Suit) => Card(rank, suit)))
 
   def gameWinner(playerOneCards: Seq[Card], playerTwoCards: Seq[Card]): Option[EndGame] =
     (playerOneCards, playerTwoCards) match {

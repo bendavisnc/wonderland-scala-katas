@@ -3,6 +3,11 @@ package cardgamewar
 import Suit.*
 import FaceCard.*
 import AceCard.*
+import DiscardPile.*
+import Player.*
+import Outcome.*
+import cats.Order
+import cats.syntax.all.*
 
 enum Player:
   case PlayerOne, PlayerTwo
@@ -16,13 +21,23 @@ enum FaceCard:
 enum AceCard:
   case Ace
 
+enum DiscardPile:
+  case Discard
+
+enum Outcome:
+  case PlayerOneWins, PlayerTwoWins, Draw
+
 type Rank = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | FaceCard | AceCard
 
 case class Card(rank: Rank, suit: Suit)
 
-case class EndGame(winner: Player, playerOneCards: Seq[Card], playerTwoCards: Seq[Card])
+type Cards = Seq[Card]
 
-case class EndRound(winner: Player, playerOneCards: Seq[Card], playerTwoCards: Seq[Card])
+type CardDesignee = Player | DiscardPile
+
+type CardHands = Map[CardDesignee, Cards]
+
+type GameState = (CardHands, Option[Outcome])
 
 val ranks: Seq[Rank] = Seq(2, 3, 4, 5, 6, 7, 8, 9, 10, Jack, Queen, King, Ace)
 
@@ -32,7 +47,28 @@ extension (rank: Rank)
 
   def rankValue: Int = ranks.indexOf(rank)
 
+extension (player: Player)
+
+  def other: Player = player match {
+    case PlayerOne => PlayerTwo
+    case PlayerTwo => PlayerOne
+  }
+
+  def wins: Outcome = player match {
+    case PlayerOne => PlayerOneWins
+    case PlayerTwo => PlayerTwoWins
+  }
+
+given Order[Card] {
+  override def compare(x: Card, y: Card): Int = x.rank.rankValue.compare(y.rank.rankValue)
+}
+
 val cards: Seq[Card] = for {
   rank <- ranks
   suit <- suits
 } yield Card(rank = rank, suit = suit)
+
+object GameState {
+  def apply(cardsA: Cards, cardsB: Cards): GameState =
+    (Map(PlayerOne -> cardsA, PlayerTwo -> cardsB), None)
+}

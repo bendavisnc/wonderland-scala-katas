@@ -3,7 +3,6 @@ package cardgamewar
 import cardgamewar.*
 import cardgamewar.Game.*
 import cardgamewar.Player.*
-import cardgamewar.Outcome.*
 import cardgamewar.DiscardPile.*
 import cardgamewar.FaceCard.*
 import cardgamewar.AceCard.*
@@ -17,7 +16,7 @@ class GameTest extends munit.FunSuite {
     assertEquals(
       playGame(drawCards)
         .run(
-          CardGameWar(Map(PlayerOne -> cards.headOption.toSeq, PlayerTwo -> cards.lastOption.toSeq))
+          Map(PlayerOne -> cards.headOption.toSeq, PlayerTwo -> cards.lastOption.toSeq)
         )
         .map(_._2.get.card)
         .value,
@@ -29,9 +28,7 @@ class GameTest extends munit.FunSuite {
     assertEquals(
       playGame(drawCards)
         .run(
-          CardGameWar(
-            Map(PlayerOne -> Seq(Card(Queen, Heart)), PlayerTwo -> Seq(Card(Jack, Heart)))
-          )
+          Map(PlayerOne -> Seq(Card(Queen, Heart)), PlayerTwo -> Seq(Card(Jack, Heart)))
         )
         .map(_._2.get.card)
         .value,
@@ -43,9 +40,7 @@ class GameTest extends munit.FunSuite {
     assertEquals(
       playGame(drawCards)
         .run(
-          CardGameWar(
-            Map(PlayerOne -> Seq(Card(King, Heart)), PlayerTwo -> Seq(Card(Queen, Heart)))
-          )
+          Map(PlayerOne -> Seq(Card(King, Heart)), PlayerTwo -> Seq(Card(Queen, Heart)))
         )
         .map(_._2.get.card)
         .value,
@@ -57,9 +52,7 @@ class GameTest extends munit.FunSuite {
     assertEquals(
       playGame(drawCards)
         .run(
-          CardGameWar(
-            Map(PlayerOne -> Seq(Card(Ace, Heart)), PlayerTwo -> Seq(Card(King, Heart)))
-          )
+          Map(PlayerOne -> Seq(Card(Ace, Heart)), PlayerTwo -> Seq(Card(King, Heart)))
         )
         .map(_._2.get.card)
         .value,
@@ -74,11 +67,9 @@ class GameTest extends munit.FunSuite {
         case ((cardsA, cardsB), (card, i)) => (cardsA, cardsB.appended(card))
       }
     assertEquals((playerOneCards.size, playerTwoCards.size), (26, 26))
-    val (CardGameWar(cardHands, _), _) = playGame(drawCards)
+    val (cardHands, _) = playGame(drawCards)
       .run(
-        CardGameWar(
-          Map(PlayerOne -> playerOneCards, PlayerTwo -> playerTwoCards)
-        )
+        Map(PlayerOne -> playerOneCards, PlayerTwo -> playerTwoCards)
       )
       .value
 
@@ -96,11 +87,9 @@ class GameTest extends munit.FunSuite {
     val playerOneCards = Seq(cardsB.last).concat(cardsA)
     val playerTwoCards = cardsB.dropRight(1)
     assertEquals((playerOneCards.size, playerTwoCards.size), (27, 25))
-    val (CardGameWar(cardHands, _), _) = playGame(drawCards)
+    val (cardHands, _) = playGame(drawCards)
       .run(
-        CardGameWar(
-          Map(PlayerOne -> playerOneCards, PlayerTwo -> playerTwoCards)
-        )
+        Map(PlayerOne -> playerOneCards, PlayerTwo -> playerTwoCards)
       )
       .value
 

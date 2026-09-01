@@ -1,13 +1,11 @@
 package cardgamewar
 
-import cardgamewar.Game.*
-import cardgamewar.Player.*
+import cardgamewar.AceCard.*
 import cardgamewar.DiscardPile.*
 import cardgamewar.FaceCard.*
-import cardgamewar.AceCard.*
+import cardgamewar.Game.*
+import cardgamewar.Player.*
 import cardgamewar.Suit.*
-import cats.data.State
-import cats.data.StateT
 
 class GameTomAndMaryTest extends munit.FunSuite {
 
@@ -16,8 +14,8 @@ class GameTomAndMaryTest extends munit.FunSuite {
     val marysCards           = Seq(Card(8, Spade))
     val cardHands: CardHands =
       Map(PlayerOne -> tomsCards, PlayerTwo -> marysCards, Discard -> Seq.empty)
-    val (CardGameWar(cardHandsNext, _), Some(BattleWinner(winningPlayer, winningCard))) =
-      playRound(drawCards).run(CardGameWar(cardHands)).value: @unchecked
+    val (cardHandsNext, Some(BattleWinner(winningPlayer, winningCard))) =
+      playGame(drawCards).run(cardHands).value: @unchecked
     assertEquals(
       winningPlayer,
       PlayerTwo
@@ -37,8 +35,8 @@ class GameTomAndMaryTest extends munit.FunSuite {
 
     val cardHands: CardHands =
       Map(PlayerOne -> tomsCards, PlayerTwo -> marysCards, Discard -> Seq.empty)
-    val (CardGameWar(cardHandsNext, _), Some(BattleWinner(winningPlayer, winningCard))) =
-      playRound(drawCards).run(CardGameWar(cardHands)).value: @unchecked
+    val (cardHandsNext, Some(BattleWinner(winningPlayer, winningCard))) =
+      playGame(drawCards).run(cardHands).value: @unchecked
     assertEquals(
       winningPlayer,
       PlayerOne
@@ -62,8 +60,8 @@ class GameTomAndMaryTest extends munit.FunSuite {
     val cardHands: CardHands =
       Map(PlayerOne -> tomsCards, PlayerTwo -> marysCards, Discard -> Seq.empty)
 
-    val (CardGameWar(cardHandsNext, _), _) =
-      playRound(drawCards).run(CardGameWar(cardHands)).value: @unchecked
+    val (cardHandsNext, _) =
+      playGame(drawCards).run(cardHands).value: @unchecked
 
     assertEquals(cardHandsNext(PlayerOne).size, 0)
     assertEquals(cardHandsNext(PlayerTwo).size, tomsCards.size + marysCards.size)

@@ -5,7 +5,6 @@ import cardgamewar.AceCard.*
 import cardgamewar.Suit.*
 import cardgamewar.Player.*
 import cardgamewar.DiscardPile.*
-import cardgamewar.Outcome.*
 import cats.syntax.all.*
 import scala.annotation.tailrec
 import cats.data.State
@@ -17,25 +16,23 @@ object Game {
 
   def drawCard(player: Player): GameState[Option[Card]] =
     State
-      .inspect((_.cardHands.get(player).flatMap(_.headOption)): CardGameWar => Option[Card])
+      .inspect((_.get(player).flatMap(_.headOption)): CardHands => Option[Card])
       .flatMap {
         case topCard @ Some(_) =>
           State
-            .modify[CardGameWar](s =>
-              CardGameWar(cardHands = s.cardHands.updated(player, s.cardHands.apply(player).tail))
-            )
+            .modify[CardHands](cardHands => cardHands.updated(player, cardHands.apply(player).tail))
             .map(_ => topCard)
         case None => State.get.map(_ => None)
       }
 
   def drawDiscardPile: GameState[Seq[Card]] =
     State
-      .inspect((_.cardHands.get(Discard).toSeq.flatten): CardGameWar => Seq[Card])
+      .inspect((_.get(Discard).toSeq.flatten): CardHands => Seq[Card])
       .flatMap { case discardCards =>
         Traverse[Seq]
           .traverse(discardCards)((card: Card) => {
-            State.modify[CardGameWar](
-              (s => s.copy(cardHands = s.cardHands.-(Discard))): CardGameWar => CardGameWar
+            State.modify[CardHands](
+              (cardHands => cardHands.-(Discard)): CardHands => CardHands
             )
           })
           .map(_ => discardCards)
@@ -44,14 +41,12 @@ object Game {
   def drawCards: GameState[(Option[Card], Option[Card])] =
     (drawCard(PlayerOne), drawCard(PlayerTwo)).tupled
 
-  def addCard(cardDesignee: CardDesignee, card: Card, s: CardGameWar): CardGameWar =
-    s.copy(cardHands =
-      s.cardHands.updated(cardDesignee, s.cardHands.get(cardDesignee).toSeq.flatten.appended(card))
-    )
+  def addCard(cardDesignee: CardDesignee, card: Card, cardHands: CardHands): CardHands =
+    cardHands.updated(cardDesignee, cardHands.get(cardDesignee).toSeq.flatten.appended(card))
 
   def drawCardsForWar: GameState[(Option[List[Card]], Option[List[Card]])] =
     def f(player: Player) = Traverse[Seq]
-      .traverse(Seq.fill(4)(player))(drawCard)
+      .traverse(Seq.fill(WarCardsCount)(player))(drawCard)
       .map(_.sequence)
       .map(_.map(_.toList))
     (f(PlayerOne), f(PlayerTwo)).tupled
@@ -64,8 +59,8 @@ object Game {
         drawDiscardPile.flatMap { case cardsDiscarded =>
           Traverse[Seq]
             .traverse(cardA :: cardB :: cardsDiscarded.toList)((card: Card) => {
-              State.modify[CardGameWar](
-                (addCard(PlayerOne, card, _: CardGameWar)): CardGameWar => CardGameWar
+              State.modify[CardHands](
+                (addCard(PlayerOne, card, _: CardHands)): CardHands => CardHands
               )
             })
             .map(_ => BattleWinner(player = PlayerOne, card = cardA).some)
@@ -74,17 +69,17 @@ object Game {
         drawDiscardPile.flatMap { case cardsDiscarded =>
           Traverse[Seq]
             .traverse(cardB :: cardA :: cardsDiscarded.toList)((card: Card) => {
-              State.modify[CardGameWar](
-                (addCard(PlayerTwo, card, _: CardGameWar)): CardGameWar => CardGameWar
+              State.modify[CardHands](
+                (addCard(PlayerTwo, card, _: CardHands)): CardHands => CardHands
               )
             })
             .map(_ => BattleWinner(player = PlayerTwo, card = cardB).some)
         }
       case (Some(cardA), Some(cardB)) =>
         State
-          .modify[CardGameWar](
-            ((addCard(Discard, cardA, _: CardGameWar)): CardGameWar => CardGameWar)
-              .andThen(addCard(Discard, cardB, _: CardGameWar))
+          .modify[CardHands](
+            ((addCard(Discard, cardA, _: CardHands)): CardHands => CardHands)
+              .andThen(addCard(Discard, cardB, _: CardHands))
           )
           .map(_ => None)
 
@@ -103,8 +98,8 @@ object Game {
           Traverse[Seq]
             .traverse(playerOneCards.concat(playerTwoCards).concat(cardsDiscarded))(
               (card: Card) => {
-                State.modify[CardGameWar](
-                  (addCard(PlayerOne, card, _: CardGameWar)): CardGameWar => CardGameWar
+                State.modify[CardHands](
+                  (addCard(PlayerOne, card, _: CardHands)): CardHands => CardHands
                 )
               }
             )
@@ -119,8 +114,8 @@ object Game {
           Traverse[Seq]
             .traverse(playerOneCards.concat(playerTwoCards).concat(cardsDiscarded))(
               (card: Card) => {
-                State.modify[CardGameWar](
-                  (addCard(PlayerTwo, card, _: CardGameWar)): CardGameWar => CardGameWar
+                State.modify[CardHands](
+                  (addCard(PlayerTwo, card, _: CardHands)): CardHands => CardHands
                 )
               }
             )
@@ -135,8 +130,8 @@ object Game {
           Traverse[Seq]
             .traverse(playerOneCards.concat(playerTwoCards).concat(cardsDiscarded))(
               (card: Card) => {
-                State.modify[CardGameWar](
-                  (addCard(Discard, card, _: CardGameWar)): CardGameWar => CardGameWar
+                State.modify[CardHands](
+                  (addCard(Discard, card, _: CardHands)): CardHands => CardHands
                 )
               }
             )
@@ -170,7 +165,7 @@ object Game {
           val (s3, a) = playRound(gamestate).run(s2).value
           Some(((s3, a), s3))
         })
-        .find { case (CardGameWar(cardHands, _), _) =>
+        .find { case (cardHands, _) =>
           Seq(PlayerOne, PlayerTwo).map(k => cardHands.get(k).toSeq.flatten.size).exists(_ == 0)
         }
         .get

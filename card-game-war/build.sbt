@@ -1,17 +1,7 @@
-val scala3Version = "3.7.4"
-
-lazy val root = project
-  .in(file("."))
-  .settings(
-    name                                   := "card-game-war",
-    version                                := "0.0.0-SNAPSHOT",
-    scalaVersion                           := scala3Version,
-    libraryDependencies += "org.typelevel" %% "cats-core" % "2.9.0",
-    libraryDependencies += "org.scalameta" %% "munit"     % "1.0.0" % Test,
-    Compile / compile := (Compile / compile)
-      .dependsOn(Compile / scalafmt)
-      .value,
-    Test / compile := (Test / compile)
-      .dependsOn(Test / scalafmt)
-      .value
-  )
+name := "card-game-war"
+version := "0.0.0-SNAPSHOT"
+scalaVersion := "3.8.4"
+libraryDependencies += "org.typelevel" %% "cats-core" % "2.9.0"
+libraryDependencies += "com.lihaoyi"   %% "pprint"      % "0.9.6"
+libraryDependencies += "org.scalameta" %% "munit"     % "1.0.0" % Test
+ 

@@ -8,6 +8,7 @@ import Player.*
 import Outcome.*
 import cats.Order
 import cats.syntax.all.*
+import cats.data.State
 
 enum Player:
   case PlayerOne, PlayerTwo
@@ -37,7 +38,18 @@ type CardDesignee = Player | DiscardPile
 
 type CardHands = Map[CardDesignee, Cards]
 
-type GameState = (CardHands, Option[Outcome])
+case class CardGameWar(cardHands: CardHands, outcome: Option[Outcome] = None)
+
+sealed trait RoundWinner {
+  def player: Player
+  def card: Card
+}
+
+case class BattleWinner(player: Player, card: Card) extends RoundWinner
+
+case class WarWinner(player: Player, card: Card) extends RoundWinner
+
+type GameState[A] = State[CardGameWar, A]
 
 val ranks: Seq[Rank] = Seq(2, 3, 4, 5, 6, 7, 8, 9, 10, Jack, Queen, King, Ace)
 
@@ -68,7 +80,7 @@ val cards: Seq[Card] = for {
   suit <- suits
 } yield Card(rank = rank, suit = suit)
 
-object GameState {
-  def apply(cardsA: Cards, cardsB: Cards): GameState =
-    (Map(PlayerOne -> cardsA, PlayerTwo -> cardsB), None)
-}
+// object GameState {
+//   def apply(cardsA: Cards, cardsB: Cards): GameState =
+//     (Map(PlayerOne -> cardsA, PlayerTwo -> cardsB), None)
+// }

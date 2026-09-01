@@ -8,114 +8,172 @@ import cardgamewar.DiscardPile.*
 import cardgamewar.Outcome.*
 import cats.syntax.all.*
 import scala.annotation.tailrec
-import cats.data.Kleisli
+import cats.data.State
 import cats.Applicative
+import cats.Traverse
+import pprint.pprintln
 
 object Game {
 
-  val DiscardCount = 4
+  def drawCard(player: Player): GameState[Option[Card]] =
+    State
+      .inspect((_.cardHands.get(player).flatMap(_.headOption)): CardGameWar => Option[Card])
+      .flatMap {
+        case topCard @ Some(_) =>
+          State
+            .modify[CardGameWar](s =>
+              CardGameWar(cardHands = s.cardHands.updated(player, s.cardHands.apply(player).tail))
+            )
+            .map(_ => topCard)
+        case None => State.get.map(_ => None)
+      }
 
-  def playTurnWinner(gameState: GameState, winner: Player): (GameState, Option[Card]) =
-    val (cardHands, _)              = gameState
-    val cardHandsUpdated: CardHands = Map(
-      winner -> cardHands
-        .get(winner)
-        .toSeq
-        .flatten
-        .tail
-        .appended(cardHands.get(winner).toSeq.flatten.head)
-        .appended(cardHands.get(winner.other).toSeq.flatten.head)
-        .concat(cardHands.get(Discard).toSeq.flatten),
-      winner.other -> cardHands.get(winner.other).toSeq.flatten.tail,
-      Discard      -> Seq.empty
+  def drawDiscardPile: GameState[Seq[Card]] =
+    State
+      .inspect((_.cardHands.get(Discard).toSeq.flatten): CardGameWar => Seq[Card])
+      .flatMap { case discardCards =>
+        Traverse[Seq]
+          .traverse(discardCards)((card: Card) => {
+            State.modify[CardGameWar](
+              (s => s.copy(cardHands = s.cardHands.-(Discard))): CardGameWar => CardGameWar
+            )
+          })
+          .map(_ => discardCards)
+      }
+
+  def drawCards: GameState[(Option[Card], Option[Card])] =
+    (drawCard(PlayerOne), drawCard(PlayerTwo)).tupled
+
+  def addCard(cardDesignee: CardDesignee, card: Card, s: CardGameWar): CardGameWar =
+    s.copy(cardHands =
+      s.cardHands.updated(cardDesignee, s.cardHands.get(cardDesignee).toSeq.flatten.appended(card))
     )
-    val winnerOutcome: Option[Outcome] =
-      if cardHandsUpdated.get(winner.other).toSeq.flatten.isEmpty then winner.wins.some else None
-    val winningCard: Option[Card] = cardHands.get(winner).toSeq.flatten.headOption
-    ((cardHandsUpdated, winnerOutcome), winningCard)
 
-  def playTurn(gameState: GameState): (GameState, Option[Card]) =
-    val (cardHands, outcome)                      = gameState
-    val playerToFirstCard: Player => Option[Card] = cardHands.get(_).flatMap(_.headOption)
-    (PlayerOne, PlayerTwo).bimap(playerToFirstCard, playerToFirstCard) match {
-      // PlayerOne has the best card
-      case (Some(cardA), Some(cardB)) if cardA > cardB => playTurnWinner(gameState, PlayerOne)
+  def drawCardsForWar: GameState[(Option[List[Card]], Option[List[Card]])] =
+    def f(player: Player) = Traverse[Seq]
+      .traverse(Seq.fill(4)(player))(drawCard)
+      .map(_.sequence)
+      .map(_.map(_.toList))
+    (f(PlayerOne), f(PlayerTwo)).tupled
 
-      // PlayerTwo has the best card
-      case (Some(cardA), Some(cardB)) if cardA < cardB => playTurnWinner(gameState, PlayerTwo)
-
-      // Neither player has enough cards to continue
-      case _
-          if cardHands
-            .get(PlayerOne)
-            .toSeq
-            .flatten
-            .size < DiscardCount && cardHands.get(PlayerTwo).toSeq.flatten.size < DiscardCount =>
-        ((cardHands, Draw.some), None)
-
-      // PlayerOne has enough cards to continue
-      case _
-          if cardHands
-            .get(PlayerTwo)
-            .toSeq
-            .flatten
-            .size < DiscardCount =>
-        ((cardHands, PlayerOneWins.some), None)
-
-      // PlayerTwo has enough cards to continue
-      case _
-          if cardHands
-            .get(PlayerOne)
-            .toSeq
-            .flatten
-            .size < DiscardCount =>
-        ((cardHands, PlayerTwoWins.some), None)
-
-      // Both players have enough cards to go into a tiebreak
+  def playBattle(
+    gamestate: GameState[(Option[Card], Option[Card])]
+  ): GameState[Option[BattleWinner]] =
+    gamestate.flatMap {
+      case (Some(cardA), Some(cardB)) if cardA > cardB =>
+        drawDiscardPile.flatMap { case cardsDiscarded =>
+          Traverse[Seq]
+            .traverse(cardA :: cardB :: cardsDiscarded.toList)((card: Card) => {
+              State.modify[CardGameWar](
+                (addCard(PlayerOne, card, _: CardGameWar)): CardGameWar => CardGameWar
+              )
+            })
+            .map(_ => BattleWinner(player = PlayerOne, card = cardA).some)
+        }
+      case (Some(cardA), Some(cardB)) if cardA < cardB =>
+        drawDiscardPile.flatMap { case cardsDiscarded =>
+          Traverse[Seq]
+            .traverse(cardB :: cardA :: cardsDiscarded.toList)((card: Card) => {
+              State.modify[CardGameWar](
+                (addCard(PlayerTwo, card, _: CardGameWar)): CardGameWar => CardGameWar
+              )
+            })
+            .map(_ => BattleWinner(player = PlayerTwo, card = cardB).some)
+        }
       case (Some(cardA), Some(cardB)) =>
-        ((Map(
-            PlayerOne -> cardHands.get(PlayerOne).toSeq.flatten.tail.drop(DiscardCount - 1),
-            PlayerTwo -> cardHands.get(PlayerTwo).toSeq.flatten.tail.drop(DiscardCount - 1),
-            Discard   -> cardHands
-              .get(Discard)
-              .toSeq
-              .flatten
-              .appended(cardA)
-              .concat(cardHands.get(PlayerOne).toSeq.flatten.tail.take(DiscardCount - 1))
-              .appended(cardB)
-              .concat(cardHands.get(PlayerTwo).toSeq.flatten.tail.take(DiscardCount - 1))
-          ),
-          None
-         ),
-         None
-        )
+        State
+          .modify[CardGameWar](
+            ((addCard(Discard, cardA, _: CardGameWar)): CardGameWar => CardGameWar)
+              .andThen(addCard(Discard, cardB, _: CardGameWar))
+          )
+          .map(_ => None)
 
-      case _ => throw Exception(s"Unexpected card hands, `$cardHands`.")
+      case _ => throw Exception("One or both players are missing a card.")
+
     }
 
-  def playRound(gameState: GameState): (GameState, Option[Card]) =
-    val f: GameState => Option[((GameState, Option[Card]), GameState)] = gameState =>
-      val (gameStateNext, cardOpt) = playTurn(gameState)
-      ((gameStateNext, cardOpt), gameStateNext).some
-
-    Iterator
-      .unfold(gameState)(f)
-      .collectFirst {
-        case roundWinner @ (gameState, Some(winningCard)) => roundWinner
-        case roundStoppage @ ((_, Some(_)), _)            => roundStoppage
+  def playWar(
+    gamestate: GameState[(Option[List[Card]], Option[List[Card]])]
+  ): GameState[Option[WarWinner]] =
+    gamestate.flatMap {
+      case (Some(playerOneCards @ _ :: _ :: _ :: cardA :: Nil),
+            Some(playerTwoCards @ _ :: _ :: _ :: cardB :: Nil)
+          ) if cardA > cardB => {
+        drawDiscardPile.flatMap { case cardsDiscarded =>
+          Traverse[Seq]
+            .traverse(playerOneCards.concat(playerTwoCards).concat(cardsDiscarded))(
+              (card: Card) => {
+                State.modify[CardGameWar](
+                  (addCard(PlayerOne, card, _: CardGameWar)): CardGameWar => CardGameWar
+                )
+              }
+            )
+            .map(_ => Some(WarWinner(player = PlayerOne, card = cardA)))
+        }
       }
-      .getOrElse(throw new Exception(s"Something bad happened during round play."))
 
-  def playGame(gameState: GameState): (GameState, Outcome) =
-    val f: GameState => Option[((GameState, Option[Card]), GameState)] = gameState =>
-      val (gameStateNext, cardOpt) = playRound(gameState)
-      ((gameStateNext, cardOpt), gameStateNext).some
-
-    Iterator
-      .unfold(gameState)(f)
-      .collectFirst { case gameConclusion @ ((_, Some(_)), _) =>
-        (gameConclusion._1, gameConclusion._1._2.get)
+      case (Some(playerOneCards @ _ :: _ :: _ :: cardA :: Nil),
+            Some(playerTwoCards @ _ :: _ :: _ :: cardB :: Nil)
+          ) if cardA < cardB => {
+        drawDiscardPile.flatMap { case cardsDiscarded =>
+          Traverse[Seq]
+            .traverse(playerOneCards.concat(playerTwoCards).concat(cardsDiscarded))(
+              (card: Card) => {
+                State.modify[CardGameWar](
+                  (addCard(PlayerTwo, card, _: CardGameWar)): CardGameWar => CardGameWar
+                )
+              }
+            )
+            .map(_ => Some(WarWinner(player = PlayerTwo, card = cardB)))
+        }
       }
-      .getOrElse(throw new Exception(s"Something bad happened during game play."))
+
+      case (Some(playerOneCards @ _ :: _ :: _ :: _ :: Nil),
+            Some(playerTwoCards @ _ :: _ :: _ :: _ :: Nil)
+          ) => {
+        drawDiscardPile.flatMap { case cardsDiscarded =>
+          Traverse[Seq]
+            .traverse(playerOneCards.concat(playerTwoCards).concat(cardsDiscarded))(
+              (card: Card) => {
+                State.modify[CardGameWar](
+                  (addCard(Discard, card, _: CardGameWar)): CardGameWar => CardGameWar
+                )
+              }
+            )
+            .map(_ => None)
+        }
+      }
+
+      case (None, None) =>
+        State.get.map(_ => None)
+
+      case _ => throw Exception("One player doesn't have enough cards for war.")
+
+    }
+
+  def playRound(
+    gamestate: GameState[(Option[Card], Option[Card])]
+  ): GameState[Option[RoundWinner]] =
+    State.apply(s => {
+      playBattle(gamestate).run(s).value match {
+        case (s2, battleWinner @ Some(_)) => (s2, battleWinner)
+        case (s2, None) => playWar(State.get.flatMap(_ => drawCardsForWar)).run(s2).value
+      }
+    })
+
+  def playGame(
+    gamestate: GameState[(Option[Card], Option[Card])]
+  ): GameState[Option[RoundWinner]] =
+    State.apply(s => {
+      Iterator
+        .unfold(s)(s2 => {
+          val (s3, a) = playRound(gamestate).run(s2).value
+          Some(((s3, a), s3))
+        })
+        .find { case (CardGameWar(cardHands, _), _) =>
+          Seq(PlayerOne, PlayerTwo).map(k => cardHands.get(k).toSeq.flatten.size).exists(_ == 0)
+        }
+        .get
+    })
 
 }

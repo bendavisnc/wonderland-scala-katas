@@ -16,14 +16,19 @@ class GameTomAndMaryTest extends munit.FunSuite {
     val marysCards           = Seq(Card(8, Spade))
     val cardHands: CardHands =
       Map(PlayerOne -> tomsCards, PlayerTwo -> marysCards, Discard -> Seq.empty)
-    val ((cardHandsUpdated, _), Some(winningCard)) = playRound((cardHands, None)): @unchecked
+    val (CardGameWar(cardHandsNext, _), Some(BattleWinner(winningPlayer, winningCard))) =
+      playRound(drawCards).run(CardGameWar(cardHands)).value: @unchecked
+    assertEquals(
+      winningPlayer,
+      PlayerTwo
+    )
     assertEquals(
       winningCard,
       marysCards.head
     )
-    assertEquals(cardHandsUpdated(PlayerOne).size, 0)
-    assertEquals(cardHandsUpdated(PlayerTwo).size, 2)
-    assertEquals(cardHandsUpdated(Discard).size, 0)
+    assertEquals(cardHandsNext(PlayerOne).size, 0)
+    assertEquals(cardHandsNext(PlayerTwo).size, 2)
+    assertEquals(cardHandsNext(Discard).size, 0)
   }
 
   test("play game, turn two") {
@@ -32,14 +37,20 @@ class GameTomAndMaryTest extends munit.FunSuite {
 
     val cardHands: CardHands =
       Map(PlayerOne -> tomsCards, PlayerTwo -> marysCards, Discard -> Seq.empty)
-    val ((cardHandsUpdated, _), Some(winningCard)) = playRound((cardHands, None)): @unchecked
+    val (CardGameWar(cardHandsNext, _), Some(BattleWinner(winningPlayer, winningCard))) =
+      playRound(drawCards).run(CardGameWar(cardHands)).value: @unchecked
+    assertEquals(
+      winningPlayer,
+      PlayerOne
+    )
     assertEquals(
       winningCard,
       tomsCards.head
     )
-    assertEquals(cardHandsUpdated(PlayerOne).size, 2)
-    assertEquals(cardHandsUpdated(PlayerTwo).size, 0)
-    assertEquals(cardHandsUpdated(Discard).size, 0)
+    assertEquals(cardHandsNext(PlayerOne).size, 2)
+    assertEquals(cardHandsNext(PlayerTwo).size, 0)
+    assertEquals(cardHandsNext(Discard).size, 0)
+
   }
 
   test("play game, turn three") {
@@ -50,14 +61,14 @@ class GameTomAndMaryTest extends munit.FunSuite {
 
     val cardHands: CardHands =
       Map(PlayerOne -> tomsCards, PlayerTwo -> marysCards, Discard -> Seq.empty)
-    val ((cardHandsUpdated, _), Some(winningCard)) = playRound(cardHands, None): @unchecked
-    assertEquals(
-      winningCard,
-      marysCards.last
-    )
-    assertEquals(cardHandsUpdated(PlayerOne).size, 0)
-    assertEquals(cardHandsUpdated(PlayerTwo).size, 10)
-    assertEquals(cardHandsUpdated(Discard).size, 0)
+
+    val (CardGameWar(cardHandsNext, _), _) =
+      playRound(drawCards).run(CardGameWar(cardHands)).value: @unchecked
+
+    assertEquals(cardHandsNext(PlayerOne).size, 0)
+    assertEquals(cardHandsNext(PlayerTwo).size, tomsCards.size + marysCards.size)
+    assertEquals(cardHandsNext.get(Discard), None)
+
   }
 
 }

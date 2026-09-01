@@ -26,7 +26,7 @@ class GameTomAndMaryTest extends munit.FunSuite {
     )
     assertEquals(cardHandsNext(PlayerOne).size, 0)
     assertEquals(cardHandsNext(PlayerTwo).size, 2)
-    assertEquals(cardHandsNext(Discard).size, 0)
+    assertEquals(cardHandsNext.get(Discard).toSeq.flatten.size, 0)
   }
 
   test("play game, turn two") {
@@ -47,7 +47,7 @@ class GameTomAndMaryTest extends munit.FunSuite {
     )
     assertEquals(cardHandsNext(PlayerOne).size, 2)
     assertEquals(cardHandsNext(PlayerTwo).size, 0)
-    assertEquals(cardHandsNext(Discard).size, 0)
+    assertEquals(cardHandsNext.get(Discard).toSeq.flatten.size, 0)
 
   }
 
@@ -65,7 +65,7 @@ class GameTomAndMaryTest extends munit.FunSuite {
 
     assertEquals(cardHandsNext(PlayerOne).size, 0)
     assertEquals(cardHandsNext(PlayerTwo).size, tomsCards.size + marysCards.size)
-    assertEquals(cardHandsNext.get(Discard), None)
+    assertEquals(cardHandsNext.get(Discard).toSeq.flatten.size, 0)
 
   }
 

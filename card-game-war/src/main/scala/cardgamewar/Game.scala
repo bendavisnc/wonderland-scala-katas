@@ -29,12 +29,10 @@ object Game {
     State
       .inspect((_.get(Discard).toSeq.flatten): CardHands => Seq[Card])
       .flatMap { case discardCards =>
-        Traverse[Seq]
-          .traverse(discardCards)((card: Card) => {
-            State.modify[CardHands](
-              (cardHands => cardHands.-(Discard)): CardHands => CardHands
-            )
-          })
+        State
+          .modify[CardHands](
+            (cardHands => cardHands.-(Discard)): CardHands => CardHands
+          )
           .map(_ => discardCards)
       }
 
@@ -149,12 +147,10 @@ object Game {
   def playRound(
     gamestate: GameState[(Option[Card], Option[Card])]
   ): GameState[Option[RoundWinner]] =
-    State.apply(s => {
-      playBattle(gamestate).run(s).value match {
-        case (s2, battleWinner @ Some(_)) => (s2, battleWinner)
-        case (s2, None) => playWar(State.get.flatMap(_ => drawCardsForWar)).run(s2).value
-      }
-    })
+    playBattle(gamestate).flatMap {
+      case battleWinner @ Some(_) => State.get.map(_ => battleWinner)
+      case _ => playWar(drawCardsForWar).asInstanceOf[GameState[Option[RoundWinner]]]
+    }
 
   def playGame(
     gamestate: GameState[(Option[Card], Option[Card])]

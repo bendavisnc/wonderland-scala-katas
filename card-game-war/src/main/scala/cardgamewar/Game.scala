@@ -22,10 +22,9 @@ object Game {
     (drawCard(PlayerOne), drawCard(PlayerTwo)).tupled
 
   def drawCardsForWar: GameState[(Option[List[Card]], Option[List[Card]])] =
-    def f(player: Player) = Traverse[Seq]
-      .traverse(Seq.fill(WarCardsCount)(player))(drawCard)
-      .map(_.sequence)
-      .map(_.map(_.toList))
+    def f(player: Player): GameState[Option[List[Card]]] = (Traverse[Seq]
+      .traverse(Seq.fill(WarCardsCount)(player))(drawCard): GameState[Seq[Option[Card]]])
+      .map(_.sequence.map(_.toList))
     (f(PlayerOne), f(PlayerTwo)).tupled
 
   def battleWinner(player: Option[Player],
@@ -124,8 +123,9 @@ object Game {
           val (s3, a) = playRound(gamestate).run(s2).value
           Some(((s3, a), s3))
         })
+        .take(1000)
         .find { case (cardHands, _) => cardHands.isGameOver }
-        .get
+        .getOrElse(throw Exception("Maximum game hands exceeded."))
     })
 
 }

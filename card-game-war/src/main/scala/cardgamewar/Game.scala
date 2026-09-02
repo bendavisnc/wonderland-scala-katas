@@ -14,33 +14,12 @@ import pprint.pprintln
 
 object Game {
 
-  def drawCard(player: Player): GameState[Option[Card]] =
-    State
-      .inspect((_.get(player).flatMap(_.headOption)): CardHands => Option[Card])
-      .flatMap {
-        case topCard @ Some(_) =>
-          State
-            .modify[CardHands](cardHands => cardHands.updated(player, cardHands.apply(player).tail))
-            .map(_ => topCard)
-        case None => State.get.map(_ => None)
-      }
+  def drawCard(player: Player): GameState[Option[Card]] = State(_.drawCard(player))
 
-  def drawDiscardPile: GameState[Seq[Card]] =
-    State
-      .inspect((_.get(Discard).toSeq.flatten): CardHands => Seq[Card])
-      .flatMap { case discardCards =>
-        State
-          .modify[CardHands](
-            (cardHands => cardHands.-(Discard)): CardHands => CardHands
-          )
-          .map(_ => discardCards)
-      }
+  def drawDiscardPile: GameState[Seq[Card]] = State(_.drawDiscardPile)
 
   def drawCards: GameState[(Option[Card], Option[Card])] =
     (drawCard(PlayerOne), drawCard(PlayerTwo)).tupled
-
-  def addCard(cardDesignee: CardDesignee, card: Card, cardHands: CardHands): CardHands =
-    cardHands.updated(cardDesignee, cardHands.get(cardDesignee).toSeq.flatten.appended(card))
 
   def drawCardsForWar: GameState[(Option[List[Card]], Option[List[Card]])] =
     def f(player: Player) = Traverse[Seq]
@@ -58,7 +37,7 @@ object Game {
           Traverse[Seq]
             .traverse(cardA :: cardB :: cardsDiscarded.toList)((card: Card) => {
               State.modify[CardHands](
-                (addCard(PlayerOne, card, _: CardHands)): CardHands => CardHands
+                (_.addCard(PlayerOne, card)): CardHands => CardHands
               )
             })
             .map(_ => BattleWinner(player = PlayerOne, card = cardA).some)
@@ -68,7 +47,7 @@ object Game {
           Traverse[Seq]
             .traverse(cardB :: cardA :: cardsDiscarded.toList)((card: Card) => {
               State.modify[CardHands](
-                (addCard(PlayerTwo, card, _: CardHands)): CardHands => CardHands
+                (_.addCard(PlayerTwo, card)): CardHands => CardHands
               )
             })
             .map(_ => BattleWinner(player = PlayerTwo, card = cardB).some)
@@ -76,8 +55,8 @@ object Game {
       case (Some(cardA), Some(cardB)) =>
         State
           .modify[CardHands](
-            ((addCard(Discard, cardA, _: CardHands)): CardHands => CardHands)
-              .andThen(addCard(Discard, cardB, _: CardHands))
+            ((_.addCard(Discard, cardA)): CardHands => CardHands)
+              .andThen(_.addCard(Discard, cardB))
           )
           .map(_ => None)
 
@@ -97,7 +76,7 @@ object Game {
             .traverse(playerOneCards.concat(playerTwoCards).concat(cardsDiscarded))(
               (card: Card) => {
                 State.modify[CardHands](
-                  (addCard(PlayerOne, card, _: CardHands)): CardHands => CardHands
+                  (_.addCard(PlayerOne, card)): CardHands => CardHands
                 )
               }
             )
@@ -113,7 +92,7 @@ object Game {
             .traverse(playerOneCards.concat(playerTwoCards).concat(cardsDiscarded))(
               (card: Card) => {
                 State.modify[CardHands](
-                  (addCard(PlayerTwo, card, _: CardHands)): CardHands => CardHands
+                  (_.addCard(PlayerTwo, card)): CardHands => CardHands
                 )
               }
             )
@@ -129,7 +108,7 @@ object Game {
             .traverse(playerOneCards.concat(playerTwoCards).concat(cardsDiscarded))(
               (card: Card) => {
                 State.modify[CardHands](
-                  (addCard(Discard, card, _: CardHands)): CardHands => CardHands
+                  (_.addCard(Discard, card)): CardHands => CardHands
                 )
               }
             )
@@ -149,7 +128,7 @@ object Game {
   ): GameState[Option[RoundWinner]] =
     playBattle(gamestate).flatMap {
       case battleWinner @ Some(_) => State.get.map(_ => battleWinner)
-      case _ => playWar(drawCardsForWar).asInstanceOf[GameState[Option[RoundWinner]]]
+      case _                      => playWar(drawCardsForWar).map(a => a: Option[RoundWinner])
     }
 
   def playGame(

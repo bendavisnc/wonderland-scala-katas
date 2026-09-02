@@ -67,6 +67,19 @@ extension (player: Player)
     case PlayerTwo => PlayerOne
   }
 
+extension (cardHands: CardHands)
+
+  def drawCard(cardDesignee: CardDesignee): (CardHands, Option[Card]) =
+    cardHands.get(cardDesignee).flatMap(_.headOption) match
+      case someCard @ Some(_) => (cardHands.updatedWith(cardDesignee)(_.map(_.tail)), someCard)
+      case None               => (cardHands, None)
+
+  def drawDiscardPile: (CardHands, Seq[Card]) =
+    (cardHands.-(Discard), cardHands.get(Discard).toSeq.flatten)
+
+  def addCard(cardDesignee: CardDesignee, card: Card): CardHands =
+    cardHands.updatedWith(cardDesignee)(_.map(_.appended(card)).orElse(Some(Seq(card))))
+
 given Order[Card] {
   override def compare(x: Card, y: Card): Int = x.rank.rankValue.compare(y.rank.rankValue)
 }

@@ -28,40 +28,48 @@ object Game {
       .map(_.map(_.toList))
     (f(PlayerOne), f(PlayerTwo)).tupled
 
+  def battleWinner(player: Option[Player],
+                   winningCard: Card,
+                   losingCard: Card
+  ): GameState[Option[BattleWinner]] =
+    drawDiscardPile.flatMap { case cardsDiscarded =>
+      Traverse[Seq]
+        .traverse(winningCard :: losingCard :: cardsDiscarded.toList)((card: Card) => {
+          State.modify[CardHands](
+            (_.addCard(player.getOrElse(Discard), card)): CardHands => CardHands
+          )
+        })
+        .as(player.map(p => BattleWinner(player = p, card = winningCard)))
+    }
+
   def playBattle(
     gamestate: GameState[(Option[Card], Option[Card])]
   ): GameState[Option[BattleWinner]] =
     gamestate.flatMap {
       case (Some(cardA), Some(cardB)) if cardA > cardB =>
-        drawDiscardPile.flatMap { case cardsDiscarded =>
-          Traverse[Seq]
-            .traverse(cardA :: cardB :: cardsDiscarded.toList)((card: Card) => {
-              State.modify[CardHands](
-                (_.addCard(PlayerOne, card)): CardHands => CardHands
-              )
-            })
-            .map(_ => BattleWinner(player = PlayerOne, card = cardA).some)
-        }
+        battleWinner(player = Some(PlayerOne), winningCard = cardA, losingCard = cardB)
       case (Some(cardA), Some(cardB)) if cardA < cardB =>
-        drawDiscardPile.flatMap { case cardsDiscarded =>
-          Traverse[Seq]
-            .traverse(cardB :: cardA :: cardsDiscarded.toList)((card: Card) => {
-              State.modify[CardHands](
-                (_.addCard(PlayerTwo, card)): CardHands => CardHands
-              )
-            })
-            .map(_ => BattleWinner(player = PlayerTwo, card = cardB).some)
-        }
+        battleWinner(player = Some(PlayerTwo), winningCard = cardB, losingCard = cardA)
       case (Some(cardA), Some(cardB)) =>
-        State
-          .modify[CardHands](
-            ((_.addCard(Discard, cardA)): CardHands => CardHands)
-              .andThen(_.addCard(Discard, cardB))
-          )
-          .map(_ => None)
-
+        battleWinner(player = None, winningCard = cardB, losingCard = cardA)
       case _ => throw Exception("One or both players are missing a card.")
+    }
 
+  def warWinner(player: Option[Player],
+                winningCards: Cards,
+                losingCards: Cards
+  ): GameState[Option[WarWinner]] =
+    drawDiscardPile.flatMap { case cardsDiscarded =>
+      val acc =
+        if player == Some(PlayerOne) then winningCards.concat(losingCards).concat(cardsDiscarded)
+        else losingCards.concat(winningCards).concat(cardsDiscarded)
+      Traverse[Seq]
+        .traverse(acc)((card: Card) => {
+          State.modify[CardHands](
+            (_.addCard(player.getOrElse(Discard), card)): CardHands => CardHands
+          )
+        })
+        .as(player.map(p => WarWinner(player = p, card = winningCards.last)))
     }
 
   def playWar(
@@ -71,53 +79,29 @@ object Game {
       case (Some(playerOneCards @ _ :: _ :: _ :: cardA :: Nil),
             Some(playerTwoCards @ _ :: _ :: _ :: cardB :: Nil)
           ) if cardA > cardB => {
-        drawDiscardPile.flatMap { case cardsDiscarded =>
-          Traverse[Seq]
-            .traverse(playerOneCards.concat(playerTwoCards).concat(cardsDiscarded))(
-              (card: Card) => {
-                State.modify[CardHands](
-                  (_.addCard(PlayerOne, card)): CardHands => CardHands
-                )
-              }
-            )
-            .map(_ => Some(WarWinner(player = PlayerOne, card = cardA)))
-        }
+        warWinner(player = Some(PlayerOne),
+                  winningCards = playerOneCards,
+                  losingCards = playerTwoCards
+        )
       }
 
       case (Some(playerOneCards @ _ :: _ :: _ :: cardA :: Nil),
             Some(playerTwoCards @ _ :: _ :: _ :: cardB :: Nil)
           ) if cardA < cardB => {
-        drawDiscardPile.flatMap { case cardsDiscarded =>
-          Traverse[Seq]
-            .traverse(playerOneCards.concat(playerTwoCards).concat(cardsDiscarded))(
-              (card: Card) => {
-                State.modify[CardHands](
-                  (_.addCard(PlayerTwo, card)): CardHands => CardHands
-                )
-              }
-            )
-            .map(_ => Some(WarWinner(player = PlayerTwo, card = cardB)))
-        }
+        warWinner(player = Some(PlayerTwo),
+                  winningCards = playerTwoCards,
+                  losingCards = playerOneCards
+        )
       }
 
       case (Some(playerOneCards @ _ :: _ :: _ :: _ :: Nil),
             Some(playerTwoCards @ _ :: _ :: _ :: _ :: Nil)
           ) => {
-        drawDiscardPile.flatMap { case cardsDiscarded =>
-          Traverse[Seq]
-            .traverse(playerOneCards.concat(playerTwoCards).concat(cardsDiscarded))(
-              (card: Card) => {
-                State.modify[CardHands](
-                  (_.addCard(Discard, card)): CardHands => CardHands
-                )
-              }
-            )
-            .map(_ => None)
-        }
+        warWinner(player = None, winningCards = playerTwoCards, losingCards = playerOneCards)
       }
 
       case (None, None) =>
-        State.get.map(_ => None)
+        State.get.as(None)
 
       case _ => throw Exception("One player doesn't have enough cards for war.")
 
@@ -127,7 +111,7 @@ object Game {
     gamestate: GameState[(Option[Card], Option[Card])]
   ): GameState[Option[RoundWinner]] =
     playBattle(gamestate).flatMap {
-      case battleWinner @ Some(_) => State.get.map(_ => battleWinner)
+      case battleWinner @ Some(_) => State.get.as(battleWinner)
       case _                      => playWar(drawCardsForWar).map(a => a: Option[RoundWinner])
     }
 
@@ -140,9 +124,7 @@ object Game {
           val (s3, a) = playRound(gamestate).run(s2).value
           Some(((s3, a), s3))
         })
-        .find { case (cardHands, _) =>
-          Seq(PlayerOne, PlayerTwo).map(k => cardHands.get(k).toSeq.flatten.size).exists(_ == 0)
-        }
+        .find { case (cardHands, _) => cardHands.isGameOver }
         .get
     })
 

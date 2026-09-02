@@ -80,6 +80,9 @@ extension (cardHands: CardHands)
   def addCard(cardDesignee: CardDesignee, card: Card): CardHands =
     cardHands.updatedWith(cardDesignee)(_.map(_.appended(card)).orElse(Some(Seq(card))))
 
+  def isGameOver: Boolean =
+    cardHands.-(Discard).values.map(_.size).toSeq.contains(0)
+
 given Order[Card] {
   override def compare(x: Card, y: Card): Int = x.rank.rankValue.compare(y.rank.rankValue)
 }

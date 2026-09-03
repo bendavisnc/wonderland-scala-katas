@@ -70,9 +70,9 @@ extension (player: Player)
 extension (cardHands: CardHands)
 
   def drawCard(cardDesignee: CardDesignee): (CardHands, Option[Card]) =
-    cardHands.get(cardDesignee).flatMap(_.headOption) match
-      case someCard @ Some(_) => (cardHands.updatedWith(cardDesignee)(_.map(_.tail)), someCard)
-      case None               => (cardHands, None)
+    cardHands.get(cardDesignee) match
+      case Some(card :: cards) => (cardHands.updated(cardDesignee, cards), Some(card))
+      case _                   => (cardHands, None)
 
   def drawDiscardPile: (CardHands, Seq[Card]) =
     (cardHands.-(Discard), cardHands.get(Discard).toSeq.flatten)

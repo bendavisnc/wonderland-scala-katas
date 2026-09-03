@@ -95,7 +95,6 @@ class GameTest extends munit.FunSuite {
 
     assertEquals(cardHands.get(PlayerOne).toSeq.flatten.size, 0)
     assertEquals(cardHands.get(PlayerTwo).toSeq.flatten.size, 52)
-    // assertEquals(cardHands.get(Discard).toSeq.flatten.size, 52)
 
   }
 

@@ -21,24 +21,26 @@ object Game {
   def drawCards: GameState[(Option[Card], Option[Card])] =
     (drawCard(PlayerOne), drawCard(PlayerTwo)).tupled
 
-  def drawCardsForWar: GameState[(Option[List[Card]], Option[List[Card]])] =
-    def f(player: Player): GameState[Option[List[Card]]] = (Traverse[Seq]
+  def drawCardsForWar: GameState[(List[Card], List[Card])] =
+    def f(player: Player): GameState[List[Card]] = (Traverse[Seq]
       .traverse(Seq.fill(WarCardsCount)(player))(drawCard): GameState[Seq[Option[Card]]])
-      .map(_.sequence.map(_.toList))
+      .map(_.flatten.toList)
     (f(PlayerOne), f(PlayerTwo)).tupled
 
   def battleWinner(player: Option[Player],
-                   winningCard: Card,
-                   losingCard: Card
+                   winningCard: Option[Card],
+                   losingCard: Option[Card]
   ): GameState[Option[BattleWinner]] =
     drawDiscardPile.flatMap { case cardsDiscarded =>
       Traverse[Seq]
-        .traverse(winningCard :: losingCard :: cardsDiscarded.toList)((card: Card) => {
-          State.modify[CardHands](
-            (_.addCard(player.getOrElse(Discard), card)): CardHands => CardHands
-          )
-        })
-        .as(player.map(p => BattleWinner(player = p, card = winningCard)))
+        .traverse(cardsDiscarded.toList ::: winningCard.toList ::: losingCard.toList)(
+          (card: Card) => {
+            State.modify[CardHands](
+              (_.addCard(player.getOrElse(Discard), card)): CardHands => CardHands
+            )
+          }
+        )
+        .as(player.map(p => BattleWinner(player = p, card = winningCard.get)))
     }
 
   def playBattle(
@@ -46,12 +48,16 @@ object Game {
   ): GameState[Option[BattleWinner]] =
     gamestate.flatMap {
       case (Some(cardA), Some(cardB)) if cardA > cardB =>
-        battleWinner(player = Some(PlayerOne), winningCard = cardA, losingCard = cardB)
+        battleWinner(player = Some(PlayerOne), winningCard = Some(cardA), losingCard = Some(cardB))
       case (Some(cardA), Some(cardB)) if cardA < cardB =>
-        battleWinner(player = Some(PlayerTwo), winningCard = cardB, losingCard = cardA)
+        battleWinner(player = Some(PlayerTwo), winningCard = Some(cardB), losingCard = Some(cardA))
       case (Some(cardA), Some(cardB)) =>
-        battleWinner(player = None, winningCard = cardB, losingCard = cardA)
-      case _ => throw Exception("One or both players are missing a card.")
+        battleWinner(player = None, winningCard = Some(cardB), losingCard = Some(cardA))
+      case (Some(cardA), None) =>
+        battleWinner(player = Some(PlayerOne), winningCard = Some(cardA), losingCard = None)
+      case (None, Some(cardB)) =>
+        battleWinner(player = Some(PlayerTwo), winningCard = Some(cardB), losingCard = None)
+      case _ => ???
     }
 
   def warWinner(player: Option[Player],
@@ -59,24 +65,23 @@ object Game {
                 losingCards: Cards
   ): GameState[Option[WarWinner]] =
     drawDiscardPile.flatMap { case cardsDiscarded =>
-      val acc =
-        if player == Some(PlayerOne) then winningCards.concat(losingCards).concat(cardsDiscarded)
-        else losingCards.concat(winningCards).concat(cardsDiscarded)
       Traverse[Seq]
-        .traverse(acc)((card: Card) => {
-          State.modify[CardHands](
-            (_.addCard(player.getOrElse(Discard), card)): CardHands => CardHands
-          )
-        })
+        .traverse(cardsDiscarded.toList ::: winningCards.toList ::: losingCards.toList)(
+          (card: Card) => {
+            State.modify[CardHands](
+              (_.addCard(player.getOrElse(Discard), card)): CardHands => CardHands
+            )
+          }
+        )
         .as(player.map(p => WarWinner(player = p, card = winningCards.last)))
     }
 
   def playWar(
-    gamestate: GameState[(Option[List[Card]], Option[List[Card]])]
+    gamestate: GameState[(List[Card], List[Card])]
   ): GameState[Option[WarWinner]] =
     gamestate.flatMap {
-      case (Some(playerOneCards @ _ :: _ :: _ :: cardA :: Nil),
-            Some(playerTwoCards @ _ :: _ :: _ :: cardB :: Nil)
+      case (playerOneCards @ _ :: _ :: _ :: cardA :: Nil,
+            playerTwoCards @ _ :: _ :: _ :: cardB :: Nil
           ) if cardA > cardB => {
         warWinner(player = Some(PlayerOne),
                   winningCards = playerOneCards,
@@ -84,8 +89,8 @@ object Game {
         )
       }
 
-      case (Some(playerOneCards @ _ :: _ :: _ :: cardA :: Nil),
-            Some(playerTwoCards @ _ :: _ :: _ :: cardB :: Nil)
+      case (playerOneCards @ _ :: _ :: _ :: cardA :: Nil,
+            playerTwoCards @ _ :: _ :: _ :: cardB :: Nil
           ) if cardA < cardB => {
         warWinner(player = Some(PlayerTwo),
                   winningCards = playerTwoCards,
@@ -93,16 +98,27 @@ object Game {
         )
       }
 
-      case (Some(playerOneCards @ _ :: _ :: _ :: _ :: Nil),
-            Some(playerTwoCards @ _ :: _ :: _ :: _ :: Nil)
-          ) => {
+      case (playerOneCards @ _ :: _ :: _ :: _ :: Nil, playerTwoCards @ _ :: _ :: _ :: _ :: Nil) => {
         warWinner(player = None, winningCards = playerTwoCards, losingCards = playerOneCards)
       }
 
-      case (None, None) =>
-        State.get.as(None)
+      case (playerOneCards @ _ :: _ :: _ :: _ :: Nil, playerTwoCards) => {
+        warWinner(player = Some(PlayerOne),
+                  winningCards = playerOneCards,
+                  losingCards = playerTwoCards
+        )
+      }
 
-      case _ => throw Exception("One player doesn't have enough cards for war.")
+      case (playerOneCards, playerTwoCards @ _ :: _ :: _ :: _ :: Nil) => {
+        warWinner(player = Some(PlayerTwo),
+                  winningCards = playerTwoCards,
+                  losingCards = playerOneCards
+        )
+      }
+
+      case (playerOneCards, playerTwoCards) => {
+        warWinner(player = None, winningCards = playerOneCards, losingCards = playerTwoCards)
+      }
 
     }
 

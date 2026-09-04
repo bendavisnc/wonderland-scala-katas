@@ -22,9 +22,8 @@ object Game {
     (drawCard(PlayerOne), drawCard(PlayerTwo)).tupled
 
   def drawCardsForWar: GameState[(List[Card], List[Card])] =
-    def f(player: Player): GameState[List[Card]] = (Traverse[Seq]
-      .traverse(Seq.fill(WarCardsCount)(player))(drawCard): GameState[Seq[Option[Card]]])
-      .map(_.flatten.toList)
+    def f(player: Player): GameState[List[Card]] =
+      drawCard(player).replicateA(WarCardsCount).map(_.flatten)
     (f(PlayerOne), f(PlayerTwo)).tupled
 
   def battleWinner(player: Option[Player],
@@ -33,7 +32,7 @@ object Game {
   ): GameState[Option[BattleWinner]] =
     drawDiscardPile.flatMap { case cardsDiscarded =>
       Traverse[Seq]
-        .traverse(cardsDiscarded.toList ::: winningCard.toList ::: losingCard.toList)(
+        .traverse_(cardsDiscarded.toList ::: winningCard.toList ::: losingCard.toList)(
           (card: Card) => {
             State.modify[CardHands](
               (_.addCard(player.getOrElse(Discard), card)): CardHands => CardHands
@@ -66,7 +65,7 @@ object Game {
   ): GameState[Option[WarWinner]] =
     drawDiscardPile.flatMap { case cardsDiscarded =>
       Traverse[Seq]
-        .traverse(cardsDiscarded.toList ::: winningCards.toList ::: losingCards.toList)(
+        .traverse_(cardsDiscarded.toList ::: winningCards.toList ::: losingCards.toList)(
           (card: Card) => {
             State.modify[CardHands](
               (_.addCard(player.getOrElse(Discard), card)): CardHands => CardHands

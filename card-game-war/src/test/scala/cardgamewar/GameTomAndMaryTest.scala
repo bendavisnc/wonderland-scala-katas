@@ -15,7 +15,7 @@ class GameTomAndMaryTest extends munit.FunSuite {
     val marysCards           = Seq(Card(8, Spade))
     val cardHands: CardHands =
       Map(PlayerOne -> tomsCards, PlayerTwo -> marysCards, Discard -> Seq.empty)
-    val (cardHandsNext, Some(BattleWinner(winningPlayer, winningCard))) =
+    val (cardHandsNext, BattleWinner(winningPlayer, winningCard)) =
       playGame(drawCards).run(cardHands).value: @unchecked
     assertEquals(
       winningPlayer,
@@ -36,7 +36,7 @@ class GameTomAndMaryTest extends munit.FunSuite {
 
     val cardHands: CardHands =
       Map(PlayerOne -> tomsCards, PlayerTwo -> marysCards, Discard -> Seq.empty)
-    val (cardHandsNext, Some(BattleWinner(winningPlayer, winningCard))) =
+    val (cardHandsNext, BattleWinner(winningPlayer, winningCard)) =
       playGame(drawCards).run(cardHands).value: @unchecked
     assertEquals(
       winningPlayer,

@@ -39,6 +39,12 @@ enum BattleResult:
   case BattleWinner(player: Player, card: Card) extends BattleResult with RoundWinner
   case War
 
+enum WarResult:
+  case WarWinner(player: Player, card: Card) extends WarResult with RoundWinner
+  case Draw                                  extends WarResult with RoundResult
+
+sealed trait RoundResult
+
 type Rank = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | FaceCard | AceCard
 
 case class Card(rank: Rank, suit: Suit)
@@ -49,12 +55,10 @@ type CardDesignee = Player | DiscardPile
 
 type CardHands = Map[CardDesignee, Cards]
 
-sealed trait RoundWinner {
+sealed trait RoundWinner extends RoundResult {
   def player: Player
   def card: Card
 }
-
-case class WarWinner(player: Player, card: Card) extends RoundWinner
 
 type GameState[A] = State[CardHands, A]
 

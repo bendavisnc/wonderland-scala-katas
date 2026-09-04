@@ -6,6 +6,7 @@ import cardgamewar.Suit.*
 import cardgamewar.Player.*
 import cardgamewar.DiscardPile.*
 import cardgamewar.BattleResult.*
+import cardgamewar.WarResult.*
 import cats.syntax.all.*
 import scala.annotation.tailrec
 import cats.data.State
@@ -66,7 +67,7 @@ object Game {
   def warWinner(player: Option[Player],
                 winningCards: Cards,
                 losingCards: Cards
-  ): GameState[Option[WarWinner]] =
+  ): GameState[WarResult] =
     drawDiscardPile.flatMap { case cardsDiscarded =>
       Traverse[Seq]
         .traverse_(cardsDiscarded.toList ::: winningCards.toList ::: losingCards.toList)(
@@ -76,12 +77,16 @@ object Game {
             )
           }
         )
-        .as(player.map(p => WarWinner(player = p, card = winningCards.last)))
+        .as((player, winningCards.lastOption) match {
+          case (Some(p), Some(c)) => WarWinner(player = p, card = c)
+          case (None, _)          => Draw
+          case _                  => ???
+        })
     }
 
   def playWar(
     gamestate: GameState[(List[Card], List[Card])]
-  ): GameState[Option[WarWinner]] =
+  ): GameState[WarResult] =
     gamestate.flatMap {
       case (playerOneCards @ _ :: _ :: _ :: cardA :: Nil,
             playerTwoCards @ _ :: _ :: _ :: cardB :: Nil
@@ -127,15 +132,19 @@ object Game {
 
   def playRound(
     gamestate: GameState[(Option[Card], Option[Card])]
-  ): GameState[Option[RoundWinner]] =
+  ): GameState[RoundResult] =
     playBattle(gamestate).flatMap {
-      case battleWinner @ BattleWinner(_, _) => State.get.as(Some(battleWinner))
-      case War => playWar(drawCardsForWar).map(a => a: Option[RoundWinner])
+      case battleWinner @ BattleWinner(_, _) => State.get.as(battleWinner)
+      case War                               =>
+        playWar(drawCardsForWar).map {
+          case warWinner @ WarWinner(_, _) => warWinner
+          case Draw                        => Draw
+        }
     }
 
   def playGame(
     gamestate: GameState[(Option[Card], Option[Card])]
-  ): GameState[Option[RoundWinner]] =
+  ): GameState[RoundResult] =
     State.apply(s => {
       Iterator
         .unfold(s)(s2 => {

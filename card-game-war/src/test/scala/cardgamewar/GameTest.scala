@@ -18,7 +18,7 @@ class GameTest extends munit.FunSuite {
         .run(
           Map(PlayerOne -> cards.headOption.toSeq, PlayerTwo -> cards.lastOption.toSeq)
         )
-        .map(_._2.get.card)
+        .map(_._2.asInstanceOf[RoundWinner].card)
         .value,
       cards.last
     )
@@ -30,7 +30,7 @@ class GameTest extends munit.FunSuite {
         .run(
           Map(PlayerOne -> Seq(Card(Queen, Heart)), PlayerTwo -> Seq(Card(Jack, Heart)))
         )
-        .map(_._2.get.card)
+        .map(_._2.asInstanceOf[RoundWinner].card)
         .value,
       Card(Queen, Heart)
     )
@@ -42,7 +42,7 @@ class GameTest extends munit.FunSuite {
         .run(
           Map(PlayerOne -> Seq(Card(King, Heart)), PlayerTwo -> Seq(Card(Queen, Heart)))
         )
-        .map(_._2.get.card)
+        .map(_._2.asInstanceOf[RoundWinner].card)
         .value,
       Card(King, Heart)
     )
@@ -54,7 +54,7 @@ class GameTest extends munit.FunSuite {
         .run(
           Map(PlayerOne -> Seq(Card(Ace, Heart)), PlayerTwo -> Seq(Card(King, Heart)))
         )
-        .map(_._2.get.card)
+        .map(_._2.asInstanceOf[RoundWinner].card)
         .value,
       Card(Ace, Heart)
     )

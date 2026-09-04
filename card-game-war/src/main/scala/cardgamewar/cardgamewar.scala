@@ -35,6 +35,10 @@ enum AceCard:
 enum DiscardPile:
   case Discard
 
+enum BattleResult:
+  case BattleWinner(player: Player, card: Card) extends BattleResult with RoundWinner
+  case War
+
 type Rank = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | FaceCard | AceCard
 
 case class Card(rank: Rank, suit: Suit)
@@ -49,8 +53,6 @@ sealed trait RoundWinner {
   def player: Player
   def card: Card
 }
-
-case class BattleWinner(player: Player, card: Card) extends RoundWinner
 
 case class WarWinner(player: Player, card: Card) extends RoundWinner
 

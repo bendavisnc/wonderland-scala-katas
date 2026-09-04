@@ -5,6 +5,7 @@ import cardgamewar.DiscardPile.*
 import cardgamewar.FaceCard.*
 import cardgamewar.Game.*
 import cardgamewar.Player.*
+import cardgamewar.BattleResult.*
 import cardgamewar.Suit.*
 
 class GameTomAndMaryTest extends munit.FunSuite {

@@ -5,6 +5,7 @@ import cardgamewar.AceCard.*
 import cardgamewar.Suit.*
 import cardgamewar.Player.*
 import cardgamewar.DiscardPile.*
+import cardgamewar.BattleResult.*
 import cats.syntax.all.*
 import scala.annotation.tailrec
 import cats.data.State
@@ -29,7 +30,7 @@ object Game {
   def battleWinner(player: Option[Player],
                    winningCard: Option[Card],
                    losingCard: Option[Card]
-  ): GameState[Option[BattleWinner]] =
+  ): GameState[BattleResult] =
     drawDiscardPile.flatMap { case cardsDiscarded =>
       Traverse[Seq]
         .traverse_(cardsDiscarded.toList ::: winningCard.toList ::: losingCard.toList)(
@@ -39,12 +40,15 @@ object Game {
             )
           }
         )
-        .as(player.map(p => BattleWinner(player = p, card = winningCard.get)))
+        .as((player, winningCard) match
+          case (Some(p), Some(c)) => BattleWinner(player = p, card = c)
+          case (None, _)          => War
+          case _                  => ???)
     }
 
   def playBattle(
     gamestate: GameState[(Option[Card], Option[Card])]
-  ): GameState[Option[BattleWinner]] =
+  ): GameState[BattleResult] =
     gamestate.flatMap {
       case (Some(cardA), Some(cardB)) if cardA > cardB =>
         battleWinner(player = Some(PlayerOne), winningCard = Some(cardA), losingCard = Some(cardB))
@@ -125,8 +129,8 @@ object Game {
     gamestate: GameState[(Option[Card], Option[Card])]
   ): GameState[Option[RoundWinner]] =
     playBattle(gamestate).flatMap {
-      case battleWinner @ Some(_) => State.get.as(battleWinner)
-      case _                      => playWar(drawCardsForWar).map(a => a: Option[RoundWinner])
+      case battleWinner @ BattleWinner(_, _) => State.get.as(Some(battleWinner))
+      case War => playWar(drawCardsForWar).map(a => a: Option[RoundWinner])
     }
 
   def playGame(

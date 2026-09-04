@@ -28,46 +28,22 @@ object Game {
       drawCard(player).replicateA(WarCardsCount).map(_.flatten)
     (f(PlayerOne), f(PlayerTwo)).tupled
 
-  def battleWinner(player: Option[Player],
-                   winningCard: Option[Card],
-                   losingCard: Option[Card]
-  ): GameState[BattleResult] =
-    drawDiscardPile.flatMap { case cardsDiscarded =>
-      Traverse[Seq]
-        .traverse_(cardsDiscarded.toList ::: winningCard.toList ::: losingCard.toList)(
-          (card: Card) => {
-            State.modify[CardHands](
-              (_.addCard(player.getOrElse(Discard), card)): CardHands => CardHands
-            )
-          }
-        )
-        .as((player, winningCard) match
-          case (Some(p), Some(c)) => BattleWinner(player = p, card = c)
-          case (None, _)          => War
-          case _                  => ???)
-    }
+  private def compareCards(playerOneCards: Cards, playerTwoCards: Cards): Option[Player] =
+    (playerOneCards.lastOption, playerTwoCards.lastOption) match
+      case (Some(cardA), Some(cardB)) if cardA > cardB => Some(PlayerOne)
+      case (Some(cardA), Some(cardB)) if cardA < cardB => Some(PlayerTwo)
+      case (Some(_), Some(_))                          => None
+      case (Some(_), None)                             => Some(PlayerOne)
+      case (None, Some(_))                             => Some(PlayerTwo)
+      case _                                           => None
 
-  def playBattle(
-    gamestate: GameState[(Option[Card], Option[Card])]
-  ): GameState[BattleResult] =
-    gamestate.flatMap {
-      case (Some(cardA), Some(cardB)) if cardA > cardB =>
-        battleWinner(player = Some(PlayerOne), winningCard = Some(cardA), losingCard = Some(cardB))
-      case (Some(cardA), Some(cardB)) if cardA < cardB =>
-        battleWinner(player = Some(PlayerTwo), winningCard = Some(cardB), losingCard = Some(cardA))
-      case (Some(cardA), Some(cardB)) =>
-        battleWinner(player = None, winningCard = Some(cardB), losingCard = Some(cardA))
-      case (Some(cardA), None) =>
-        battleWinner(player = Some(PlayerOne), winningCard = Some(cardA), losingCard = None)
-      case (None, Some(cardB)) =>
-        battleWinner(player = Some(PlayerTwo), winningCard = Some(cardB), losingCard = None)
-      case _ => ???
-    }
-
-  def warWinner(player: Option[Player],
-                winningCards: Cards,
-                losingCards: Cards
-  ): GameState[WarResult] =
+  private def awardCards[A](
+    player: Option[Player],
+    winningCards: Cards,
+    losingCards: Cards,
+    tieResult: => A,
+    winner: (Player, Card) => A
+  ): GameState[A] =
     drawDiscardPile.flatMap { case cardsDiscarded =>
       Traverse[Seq]
         .traverse_(cardsDiscarded.toList ::: winningCards.toList ::: losingCards.toList)(
@@ -77,57 +53,63 @@ object Game {
             )
           }
         )
-        .as((player, winningCards.lastOption) match {
-          case (Some(p), Some(c)) => WarWinner(player = p, card = c)
-          case (None, _)          => Draw
-          case _                  => ???
-        })
+        .as((player, winningCards.lastOption) match
+          case (Some(p), Some(c)) => winner(p, c)
+          case (None, _)          => tieResult
+          case _                  => ???)
     }
+
+  def battleWinner(player: Option[Player],
+                   winningCard: Option[Card],
+                   losingCard: Option[Card]
+  ): GameState[BattleResult] =
+    awardCards(player = player,
+               winningCards = winningCard.toSeq,
+               losingCards = losingCard.toSeq,
+               tieResult = War,
+               winner = BattleWinner.apply
+    )
+
+  def playBattle(
+    gamestate: GameState[(Option[Card], Option[Card])]
+  ): GameState[BattleResult] =
+    gamestate.flatMap { case (cardA, cardB) =>
+      compareCards(cardA.toSeq, cardB.toSeq) match
+        case Some(PlayerOne) =>
+          battleWinner(player = Some(PlayerOne), winningCard = cardA, losingCard = cardB)
+        case Some(PlayerTwo) =>
+          battleWinner(player = Some(PlayerTwo), winningCard = cardB, losingCard = cardA)
+        case None => battleWinner(player = None, winningCard = cardB, losingCard = cardA)
+    }
+
+  def warWinner(player: Option[Player],
+                winningCards: Cards,
+                losingCards: Cards
+  ): GameState[WarResult] =
+    awardCards(player = player,
+               winningCards = winningCards,
+               losingCards = losingCards,
+               tieResult = Draw,
+               winner = WarWinner.apply
+    )
 
   def playWar(
     gamestate: GameState[(List[Card], List[Card])]
   ): GameState[WarResult] =
-    gamestate.flatMap {
-      case (playerOneCards @ _ :: _ :: _ :: cardA :: Nil,
-            playerTwoCards @ _ :: _ :: _ :: cardB :: Nil
-          ) if cardA > cardB => {
-        warWinner(player = Some(PlayerOne),
-                  winningCards = playerOneCards,
-                  losingCards = playerTwoCards
-        )
-      }
-
-      case (playerOneCards @ _ :: _ :: _ :: cardA :: Nil,
-            playerTwoCards @ _ :: _ :: _ :: cardB :: Nil
-          ) if cardA < cardB => {
-        warWinner(player = Some(PlayerTwo),
-                  winningCards = playerTwoCards,
-                  losingCards = playerOneCards
-        )
-      }
-
-      case (playerOneCards @ _ :: _ :: _ :: _ :: Nil, playerTwoCards @ _ :: _ :: _ :: _ :: Nil) => {
-        warWinner(player = None, winningCards = playerTwoCards, losingCards = playerOneCards)
-      }
-
-      case (playerOneCards @ _ :: _ :: _ :: _ :: Nil, playerTwoCards) => {
-        warWinner(player = Some(PlayerOne),
-                  winningCards = playerOneCards,
-                  losingCards = playerTwoCards
-        )
-      }
-
-      case (playerOneCards, playerTwoCards @ _ :: _ :: _ :: _ :: Nil) => {
-        warWinner(player = Some(PlayerTwo),
-                  winningCards = playerTwoCards,
-                  losingCards = playerOneCards
-        )
-      }
-
-      case (playerOneCards, playerTwoCards) => {
-        warWinner(player = None, winningCards = playerOneCards, losingCards = playerTwoCards)
-      }
-
+    gamestate.flatMap { case (playerOneCards, playerTwoCards) =>
+      compareCards(playerOneCards, playerTwoCards) match
+        case Some(PlayerOne) =>
+          warWinner(player = Some(PlayerOne),
+                    winningCards = playerOneCards,
+                    losingCards = playerTwoCards
+          )
+        case Some(PlayerTwo) =>
+          warWinner(player = Some(PlayerTwo),
+                    winningCards = playerTwoCards,
+                    losingCards = playerOneCards
+          )
+        case None =>
+          warWinner(player = None, winningCards = playerTwoCards, losingCards = playerOneCards)
     }
 
   def playRound(

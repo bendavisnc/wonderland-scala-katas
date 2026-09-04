@@ -16,14 +16,14 @@ import pprint.pprintln
 
 object Game {
 
-  def drawCard(player: Player): GameState[Option[Card]] = State(_.drawCard(player))
+  private def drawCard(player: Player): GameState[Option[Card]] = State(_.drawCard(player))
 
-  def drawDiscardPile: GameState[Seq[Card]] = State(_.drawDiscardPile)
+  private def drawDiscardPile: GameState[Seq[Card]] = State(_.drawDiscardPile)
 
   def drawCards: GameState[(Option[Card], Option[Card])] =
     (drawCard(PlayerOne), drawCard(PlayerTwo)).tupled
 
-  def drawCardsForWar: GameState[(List[Card], List[Card])] =
+  private def drawCardsForWar: GameState[(List[Card], List[Card])] =
     def f(player: Player): GameState[List[Card]] =
       drawCard(player).replicateA(WarCardsCount).map(_.flatten)
     (f(PlayerOne), f(PlayerTwo)).tupled
@@ -59,9 +59,9 @@ object Game {
           case _                  => ???)
     }
 
-  def battleWinner(player: Option[Player],
-                   winningCard: Option[Card],
-                   losingCard: Option[Card]
+  private def battleWinner(player: Option[Player],
+                           winningCard: Option[Card],
+                           losingCard: Option[Card]
   ): GameState[BattleResult] =
     awardCards(player = player,
                winningCards = winningCard.toSeq,
@@ -70,7 +70,7 @@ object Game {
                winner = BattleWinner.apply
     )
 
-  def playBattle(
+  private def playBattle(
     gamestate: GameState[(Option[Card], Option[Card])]
   ): GameState[BattleResult] =
     gamestate.flatMap { case (cardA, cardB) =>
@@ -82,9 +82,9 @@ object Game {
         case None => battleWinner(player = None, winningCard = cardB, losingCard = cardA)
     }
 
-  def warWinner(player: Option[Player],
-                winningCards: Cards,
-                losingCards: Cards
+  private def warWinner(player: Option[Player],
+                        winningCards: Cards,
+                        losingCards: Cards
   ): GameState[WarResult] =
     awardCards(player = player,
                winningCards = winningCards,
@@ -93,7 +93,7 @@ object Game {
                winner = WarWinner.apply
     )
 
-  def playWar(
+  private def playWar(
     gamestate: GameState[(List[Card], List[Card])]
   ): GameState[WarResult] =
     gamestate.flatMap { case (playerOneCards, playerTwoCards) =>
@@ -112,7 +112,7 @@ object Game {
           warWinner(player = None, winningCards = playerTwoCards, losingCards = playerOneCards)
     }
 
-  def playRound(
+  private def playRound(
     gamestate: GameState[(Option[Card], Option[Card])]
   ): GameState[RoundResult] =
     playBattle(gamestate).flatMap {

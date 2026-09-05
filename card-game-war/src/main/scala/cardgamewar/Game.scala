@@ -112,7 +112,7 @@ object Game {
           warWinner(player = None, winningCards = playerTwoCards, losingCards = playerOneCards)
     }
 
-  private def playRound(
+  private def playBattleWithWarFallback(
     gamestate: GameState[(Option[Card], Option[Card])]
   ): GameState[RoundResult] =
     playBattle(gamestate).flatMap {
@@ -124,13 +124,20 @@ object Game {
         }
     }
 
+  def playRound(cardA: Card, cardB: Card): Card =
+    playBattle(
+      State.pure((Some(cardA), Some(cardB))): GameState[(Option[Card], Option[Card])]
+    ).runA(Map.empty).value match
+      case BattleWinner(player, card) => card
+      case War                        => throw Exception(s"Cards are equal, `${(cardA, cardB)}`.")
+
   def playGame(
     gamestate: GameState[(Option[Card], Option[Card])]
   ): GameState[RoundResult] =
     State.apply(s => {
       Iterator
         .unfold(s)(s2 => {
-          val (s3, a) = playRound(gamestate).run(s2).value
+          val (s3, a) = playBattleWithWarFallback(gamestate).run(s2).value
           Some(((s3, a), s3))
         })
         .take(1000)

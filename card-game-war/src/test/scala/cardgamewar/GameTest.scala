@@ -14,48 +14,28 @@ class GameTest extends munit.FunSuite {
 
   test("play round, the highest rank wins the cards in the round") {
     assertEquals(
-      playGame(drawCards)
-        .run(
-          Map(PlayerOne -> cards.headOption.toSeq, PlayerTwo -> cards.lastOption.toSeq)
-        )
-        .map(_._2.asInstanceOf[RoundWinner].card)
-        .value,
+      playRound(cards.head, cards.last),
       cards.last
     )
   }
 
   test("play round, queens are higher rank than jacks") {
     assertEquals(
-      playGame(drawCards)
-        .run(
-          Map(PlayerOne -> Seq(Card(Queen, Heart)), PlayerTwo -> Seq(Card(Jack, Heart)))
-        )
-        .map(_._2.asInstanceOf[RoundWinner].card)
-        .value,
+      playRound(Card(Queen, Heart), Card(Jack, Heart)),
       Card(Queen, Heart)
     )
   }
 
   test("play round, kings are higher rank than queens") {
     assertEquals(
-      playGame(drawCards)
-        .run(
-          Map(PlayerOne -> Seq(Card(King, Heart)), PlayerTwo -> Seq(Card(Queen, Heart)))
-        )
-        .map(_._2.asInstanceOf[RoundWinner].card)
-        .value,
+      playRound(Card(King, Heart), Card(Queen, Heart)),
       Card(King, Heart)
     )
   }
 
   test("play round, aces are higher rank than kings") {
     assertEquals(
-      playGame(drawCards)
-        .run(
-          Map(PlayerOne -> Seq(Card(Ace, Heart)), PlayerTwo -> Seq(Card(King, Heart)))
-        )
-        .map(_._2.asInstanceOf[RoundWinner].card)
-        .value,
+      playRound(Card(Ace, Heart), Card(King, Heart)),
       Card(Ace, Heart)
     )
   }

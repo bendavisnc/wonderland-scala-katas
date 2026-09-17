@@ -18,7 +18,7 @@ val suits: Seq[Suit] = Seq(Spade, Club, Diamond, Heart)
 val cards: Cards = for {
   rank <- ranks
   suit <- suits
-} yield Card(rank = rank, suit = suit)
+} yield Card(rank, suit)
 
 enum Player:
   case PlayerOne, PlayerTwo
@@ -97,3 +97,9 @@ extension (cardHands: CardHands)
 given Order[Card] {
   override def compare(x: Card, y: Card): Int = x.rank.rankValue.compare(y.rank.rankValue)
 }
+
+given tuple2RankCard: Conversion[Tuple2[Rank, Suit], Card] with
+  def apply(a: (Rank, Suit)): Card = Card(a._1, a._2)
+
+given tuple2IntCard: Conversion[Tuple2[Int, Suit], Card] with
+  def apply(a: (Int, Suit)): Card = Card(a._1.asInstanceOf[Rank], a._2)

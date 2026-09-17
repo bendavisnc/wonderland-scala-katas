@@ -21,22 +21,22 @@ class GameTest extends munit.FunSuite {
 
   test("play round, queens are higher rank than jacks") {
     assertEquals(
-      playRound(Card(Queen, ♥), Card(Jack, ♥)),
-      Card(Queen, ♥)
+      playRound((Queen, ♥), (Jack, ♥)),
+      (Queen, ♥): Card
     )
   }
 
   test("play round, kings are higher rank than queens") {
     assertEquals(
-      playRound(Card(King, ♥), Card(Queen, ♥)),
-      Card(King, ♥)
+      playRound((King, ♥), (Queen, ♥)),
+      (King, ♥): Card
     )
   }
 
   test("play round, aces are higher rank than kings") {
     assertEquals(
-      playRound(Card(Ace, ♥), Card(King, ♥)),
-      Card(Ace, ♥)
+      playRound((Ace, ♥), (King, ♥)),
+      (Ace, ♥): Card
     )
   }
 

@@ -7,12 +7,14 @@ import cardgamewar.Game.*
 import cardgamewar.Player.*
 import cardgamewar.BattleResult.*
 import cardgamewar.Suit.*
+import cardgamewar.tuple2IntCard
+import cardgamewar.tuple2RankCard
 
 class GameTomAndMaryTest extends munit.FunSuite {
 
   test("play game, turn one") {
-    val tomsCards: Seq[Card] = Seq(Card(4, ♣))
-    val marysCards           = Seq(Card(8, ♠))
+    val tomsCards            = Seq[Card]((4, ♣))
+    val marysCards           = Seq[Card]((8, ♠))
     val cardHands: CardHands =
       Map(PlayerOne -> tomsCards, PlayerTwo -> marysCards, Discard -> Seq.empty)
     val (cardHandsNext, BattleWinner(winningPlayer, winningCard)) =
@@ -31,8 +33,8 @@ class GameTomAndMaryTest extends munit.FunSuite {
   }
 
   test("play game, turn two") {
-    val tomsCards  = Seq(Card(Ace, ♠))
-    val marysCards = Seq(Card(King, ♠))
+    val tomsCards  = Seq[Card]((Ace, ♠))
+    val marysCards = Seq[Card]((King, ♠))
 
     val cardHands: CardHands =
       Map(PlayerOne -> tomsCards, PlayerTwo -> marysCards, Discard -> Seq.empty)
@@ -54,9 +56,9 @@ class GameTomAndMaryTest extends munit.FunSuite {
 
   test("play game, turn three") {
     val tomsCards =
-      Seq(Card(6, ♠), Card(2, ♠), Card(3, ♠), Card(4, ♠), Card(8, ♦))
+      Seq[Card]((6, ♠), (2, ♠), (3, ♠), (4, ♠), (8, ♦))
     val marysCards =
-      Seq(Card(6, ♦), Card(2, ♦), Card(3, ♦), Card(4, ♦), Card(9, ♥))
+      Seq[Card]((6, ♦), (2, ♦), (3, ♦), (4, ♦), (9, ♥))
 
     val cardHands: CardHands =
       Map(PlayerOne -> tomsCards, PlayerTwo -> marysCards, Discard -> Seq.empty)

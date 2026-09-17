@@ -26,6 +26,11 @@ enum Player:
 enum Suit:
   case Spade, Club, Diamond, Heart
 
+val ♠ = Spade
+val ♣ = Club
+val ♦ = Diamond
+val ♥ = Heart
+
 enum FaceCard:
   case Jack, Queen, King
 

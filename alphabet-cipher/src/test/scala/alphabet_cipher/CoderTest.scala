@@ -1,7 +1,6 @@
 package alphabet_cipher
 
-import alphabet_cipher.Coder.{decipher, decode, encode}
-import alphabet_cipher.Coder.alphabetCipherChart
+import alphabet_cipher.Coder.*
 
 class CoderTest extends munit.FunSuite {
 

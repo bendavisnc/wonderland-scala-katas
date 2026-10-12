@@ -1,6 +1,5 @@
 package doublets
 
-import cats.syntax.all.*
 import scala.collection.immutable.Queue
 import scala.annotation.tailrec
 import io.circe.parser.parse

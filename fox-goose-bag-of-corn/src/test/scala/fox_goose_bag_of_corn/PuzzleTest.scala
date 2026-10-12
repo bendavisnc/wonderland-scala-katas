@@ -7,7 +7,7 @@ class PuzzleTest extends munit.FunSuite {
   def validateMove(step1: RiverCrossingSection, step2: RiverCrossingSection): RiverCrossingSection =
     val symmetricDiff = step1.diff(step2).union(step2.diff(step1))
     assert(symmetricDiff.size < 3)
-    if (symmetricDiff.size > 0) {
+    if symmetricDiff.size > 0 then {
       assert(symmetricDiff.contains(🤷))
     }
     step2
@@ -29,7 +29,7 @@ class PuzzleTest extends munit.FunSuite {
     val boatPositions = crossingPlan.map(_.tail.head)
     assert(boatPositions.forall(_.size <= 3))
     // moves are valid
-    val leftMoves  = crossingPlan.map(_.head)
+    val leftMoves   = crossingPlan.map(_.head)
     val middleMoves = crossingPlan.map(_.tail.head)
     val rightMoves  = crossingPlan.map(_.last)
     leftMoves.reduce(validateMove)

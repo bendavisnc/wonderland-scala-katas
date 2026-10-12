@@ -30,7 +30,7 @@ object Steps {
             .updated(to.ordinal, mostRecent(to.ordinal).union(Set(🤷, carryItem)))
       }
       // filter out any generated steps that contradict the rules
-      .filter(Logic.isBoatCapacityRespected)  
+      .filter(Logic.isBoatCapacityRespected)
       .filter(Logic.isEveryoneSafe)
 
   def everyPossibleNextSteps(steps: Seq[RiverCrossingStep]): Seq[RiverCrossingStep] =

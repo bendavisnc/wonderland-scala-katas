@@ -23,24 +23,46 @@ jobs:
         id: changes
         with:
           filters: |
-            doublets:
-              - 'doublets/**'
             alphabet-cipher:
               - 'alphabet-cipher/**'
+            card-game-war:
+              - 'card-game-war/**'
+            doublets:
+              - 'doublets/**'
             fox-goose-bag-of-corn:
               - 'fox-goose-bag-of-corn/**'
+            magic-square:
+              - 'magic-square/**'
+            tiny-maze:
+              - 'tiny-maze/**'
 
-      - name: Test doublets
-        if: steps.changes.outputs.doublets == 'true'
-        working-directory: doublets
-        run: sbt test
 
       - name: Test alphabet-cipher
         if: steps.changes.outputs.alphabet-cipher == 'true'
         working-directory: alphabet-cipher
         run: sbt test
 
+      - name: Test card-game-war
+        if: steps.changes.outputs.card-game-war == 'true'
+        working-directory: card-game-war
+        run: sbt test
+
+      - name: Test doublets
+        if: steps.changes.outputs.doublets == 'true'
+        working-directory: doublets
+        run: sbt test
+
       - name: Test fox-goose-bag-of-corn
         if: steps.changes.outputs.fox-goose-bag-of-corn == 'true'
         working-directory: fox-goose-bag-of-corn
+        run: sbt test
+
+      - name: Test magic-square
+        if: steps.changes.outputs.magic-square == 'true'
+        working-directory: magic-square
+        run: sbt test
+
+      - name: Test tiny-maze
+        if: steps.changes.outputs.tiny-maze == 'true'
+        working-directory: tiny-maze
         run: sbt test

@@ -1,7 +1,5 @@
 package alphabet_cipher
 
-import cats.syntax.all.*
-
 object Coder {
 
   def alphabetCipherChartNextRow(row: Seq[Char]): Seq[Char] =

@@ -1,9 +1,22 @@
-
-name: Scala tests
+name: tests
 
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: "Which tests should run?"
+        required: true
+        type: choice
+        options:
+          - all
+          - alphabet-cipher
+          - card-game-war
+          - doublets
+          - fox-goose-bag-of-corn
+          - magic-square
+          - tiny-maze
 
 jobs:
   test:
@@ -21,6 +34,7 @@ jobs:
 
       - uses: dorny/paths-filter@v4
         id: changes
+        if: github.event_name != 'workflow_dispatch'
         with:
           filters: |
             alphabet-cipher:
@@ -36,33 +50,32 @@ jobs:
             tiny-maze:
               - 'tiny-maze/**'
 
-
       - name: Test alphabet-cipher
-        if: steps.changes.outputs.alphabet-cipher == 'true'
+        if: (github.event_name == 'workflow_dispatch' && (inputs.project == 'all' || inputs.project == 'alphabet-cipher')) || (github.event_name != 'workflow_dispatch' && steps.changes.outputs.alphabet-cipher == 'true')
         working-directory: alphabet-cipher
         run: sbt test
 
       - name: Test card-game-war
-        if: steps.changes.outputs.card-game-war == 'true'
+        if: (github.event_name == 'workflow_dispatch' && (inputs.project == 'all' || inputs.project == 'card-game-war')) || (github.event_name != 'workflow_dispatch' && steps.changes.outputs.card-game-war == 'true')
         working-directory: card-game-war
         run: sbt test
 
       - name: Test doublets
-        if: steps.changes.outputs.doublets == 'true'
+        if: (github.event_name == 'workflow_dispatch' && (inputs.project == 'all' || inputs.project == 'doublets')) || (github.event_name != 'workflow_dispatch' && steps.changes.outputs.doublets == 'true')
         working-directory: doublets
         run: sbt test
 
       - name: Test fox-goose-bag-of-corn
-        if: steps.changes.outputs.fox-goose-bag-of-corn == 'true'
+        if: (github.event_name == 'workflow_dispatch' && (inputs.project == 'all' || inputs.project == 'fox-goose-bag-of-corn')) || (github.event_name != 'workflow_dispatch' && steps.changes.outputs.fox-goose-bag-of-corn == 'true')
         working-directory: fox-goose-bag-of-corn
         run: sbt test
 
       - name: Test magic-square
-        if: steps.changes.outputs.magic-square == 'true'
+        if: (github.event_name == 'workflow_dispatch' && (inputs.project == 'all' || inputs.project == 'magic-square')) || (github.event_name != 'workflow_dispatch' && steps.changes.outputs.magic-square == 'true')
         working-directory: magic-square
         run: sbt test
 
       - name: Test tiny-maze
-        if: steps.changes.outputs.tiny-maze == 'true'
+        if: (github.event_name == 'workflow_dispatch' && (inputs.project == 'all' || inputs.project == 'tiny-maze')) || (github.event_name != 'workflow_dispatch' && steps.changes.outputs.tiny-maze == 'true')
         working-directory: tiny-maze
         run: sbt test

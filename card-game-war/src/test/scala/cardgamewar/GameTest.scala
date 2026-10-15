@@ -6,9 +6,7 @@ import cardgamewar.Player.*
 import cardgamewar.DiscardPile.*
 import cardgamewar.FaceCard.*
 import cardgamewar.AceCard.*
-import cardgamewar.Suit.*
-import cats.data.State
-import cats.data.StateT
+import scala.language.implicitConversions
 
 class GameTest extends munit.FunSuite {
 
@@ -44,7 +42,7 @@ class GameTest extends munit.FunSuite {
     val (playerOneCards, playerTwoCards) =
       cards.zipWithIndex.foldLeft((Seq.empty[Card], Seq.empty[Card])) {
         case ((cardsA, cardsB), (card, i)) if i % 2 == 1 => (cardsA.appended(card), cardsB)
-        case ((cardsA, cardsB), (card, i)) => (cardsA, cardsB.appended(card))
+        case ((cardsA, cardsB), (card, _)) => (cardsA, cardsB.appended(card))
       }
     assertEquals((playerOneCards.size, playerTwoCards.size), (26, 26))
     val (cardHands, _) = playGame(drawCards)
@@ -62,7 +60,7 @@ class GameTest extends munit.FunSuite {
     val (cardsA, cardsB) =
       cards.zipWithIndex.foldLeft((Seq.empty[Card], Seq.empty[Card])) {
         case ((cardsA, cardsB), (card, i)) if i % 2 == 1 => (cardsA.appended(card), cardsB)
-        case ((cardsA, cardsB), (card, i)) => (cardsA, cardsB.appended(card))
+        case ((cardsA, cardsB), (card, _)) => (cardsA, cardsB.appended(card))
       }
     val playerOneCards = Seq(cardsB.last).concat(cardsA)
     val playerTwoCards = cardsB.dropRight(1)

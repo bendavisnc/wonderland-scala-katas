@@ -4,10 +4,7 @@ import munit.ScalaCheckSuite
 import org.scalacheck.Prop.*
 import cardgamewar.Game.*
 import cardgamewar.DiscardPile.*
-import cardgamewar.Player.*
 import cardgamewar.WarResult.*
-import org.scalacheck.Gen
-import org.scalacheck.Arbitrary
 import Helpers.h
 import cardgamewar.BattleResult.BattleWinner
 

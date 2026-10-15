@@ -6,9 +6,9 @@ import cardgamewar.FaceCard.*
 import cardgamewar.Game.*
 import cardgamewar.Player.*
 import cardgamewar.BattleResult.*
-import cardgamewar.Suit.*
 import cardgamewar.tuple2IntCard
 import cardgamewar.tuple2RankCard
+import scala.language.implicitConversions
 
 class GameTomAndMaryTest extends munit.FunSuite {
 

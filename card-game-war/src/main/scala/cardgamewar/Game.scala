@@ -1,18 +1,12 @@
 package cardgamewar
 
-import cardgamewar.FaceCard.*
-import cardgamewar.AceCard.*
-import cardgamewar.Suit.*
 import cardgamewar.Player.*
 import cardgamewar.DiscardPile.*
 import cardgamewar.BattleResult.*
 import cardgamewar.WarResult.*
 import cats.syntax.all.*
-import scala.annotation.tailrec
 import cats.data.State
-import cats.Applicative
 import cats.Traverse
-import pprint.pprintln
 
 object Game {
 

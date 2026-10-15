@@ -1,8 +1,6 @@
 package magicsquare
 
 import cats.syntax.all.*
-import scala.collection.immutable.Queue
-import scala.annotation.tailrec
 
 object Puzzle {
 
@@ -41,7 +39,7 @@ object Puzzle {
 
   def magicSquare(values: Seq[Double]): Square =
     values.permutations
-      .map(square(_))
-      .find(isMagical(_))
+      .map(square)
+      .find(isMagical)
       .getOrElse(throw new Exception("Failed to find magic square."))
 }

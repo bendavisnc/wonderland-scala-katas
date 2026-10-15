@@ -1,4 +1,4 @@
-# wonderland-scala-katas [![Build Status](https://github.com/bendavisnc/wonderland-scala-katas/actions/workflows/tests.yml/badge.svg)](https://github.com/bendavisnc/wonderland-scala-katas/actions/workflows/tests.yml)
+# wonderland-scala-katas [![Build Status](https://github.com/bendavisnc/wonderland-scala-katas/actions/workflows/tests.yml/badge.svg)](https://github.com/bendavisnc/wonderland-scala-katas/actions/workflows/tests.yml) [![Build Status](https://github.com/bendavisnc/wonderland-scala-katas/actions/workflows/lintchecks.yml/badge.svg)](https://github.com/bendavisnc/wonderland-scala-katas/actions/workflows/lintchecks.yml)
 
 
 Based on [wonderland-clojure-katas](https://github.com/gigasquid/wonderland-clojure-katas)

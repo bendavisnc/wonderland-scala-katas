@@ -45,7 +45,7 @@ object Solver {
               (latestMazeStep match
                 case s: MazeStep      => nextMazeSteps(s)
                 case s: MazeFirstStep => nextMazeSteps(s)
-                case s: MazeLastStep  => ???
+                case _: MazeLastStep  => ???
               ).map(mazeSteps.appended(_))
             )
           )

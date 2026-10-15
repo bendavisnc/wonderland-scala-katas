@@ -53,29 +53,29 @@ jobs:
       - name: Test alphabet-cipher
         if: (github.event_name == 'workflow_dispatch' && (inputs.project == 'all' || inputs.project == 'alphabet-cipher')) || (github.event_name != 'workflow_dispatch' && steps.changes.outputs.alphabet-cipher == 'true')
         working-directory: alphabet-cipher
-        run: sbt test
+        run: sbt testFull
 
       - name: Test card-game-war
         if: (github.event_name == 'workflow_dispatch' && (inputs.project == 'all' || inputs.project == 'card-game-war')) || (github.event_name != 'workflow_dispatch' && steps.changes.outputs.card-game-war == 'true')
         working-directory: card-game-war
-        run: sbt test
+        run: sbt testFull
 
       - name: Test doublets
         if: (github.event_name == 'workflow_dispatch' && (inputs.project == 'all' || inputs.project == 'doublets')) || (github.event_name != 'workflow_dispatch' && steps.changes.outputs.doublets == 'true')
         working-directory: doublets
-        run: sbt test
+        run: sbt testFull
 
       - name: Test fox-goose-bag-of-corn
         if: (github.event_name == 'workflow_dispatch' && (inputs.project == 'all' || inputs.project == 'fox-goose-bag-of-corn')) || (github.event_name != 'workflow_dispatch' && steps.changes.outputs.fox-goose-bag-of-corn == 'true')
         working-directory: fox-goose-bag-of-corn
-        run: sbt test
+        run: sbt testFull
 
       - name: Test magic-square
         if: (github.event_name == 'workflow_dispatch' && (inputs.project == 'all' || inputs.project == 'magic-square')) || (github.event_name != 'workflow_dispatch' && steps.changes.outputs.magic-square == 'true')
         working-directory: magic-square
-        run: sbt test
+        run: sbt testFull
 
       - name: Test tiny-maze
         if: (github.event_name == 'workflow_dispatch' && (inputs.project == 'all' || inputs.project == 'tiny-maze')) || (github.event_name != 'workflow_dispatch' && steps.changes.outputs.tiny-maze == 'true')
         working-directory: tiny-maze
-        run: sbt test
+        run: sbt testFull
